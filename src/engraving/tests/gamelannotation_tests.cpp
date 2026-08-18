@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <vector>
 
 #include "engraving/dom/beam.h"
 #include "engraving/dom/chord.h"
@@ -83,6 +84,40 @@ TEST(Engraving_GamelanNotationTests, PelogProfileDefinesSevenNumericDegrees)
         ASSERT_NE(profile.degreeForPitch(pitch), nullptr);
         EXPECT_EQ(profile.degreeForPitch(pitch)->number, degree);
         EXPECT_EQ(numericPulseDegreeText(&profile, pitch), muse::String::number(degree));
+    }
+}
+
+TEST(Engraving_GamelanNotationTests, RequestedPelogInstrumentProfilesAreAvailable)
+{
+    struct ExpectedProfile {
+        const char16_t* instrumentId;
+        std::vector<int> degrees;
+    };
+
+    const std::array<ExpectedProfile, 9> expectedProfiles { {
+        { u"saron-pelog", { 1, 2, 3, 4, 5, 6, 7 } },
+        { u"gender-pelog", { 1, 2, 3, 4, 5, 6, 7 } },
+        { u"gambang-pelog", { 1, 2, 3, 4, 5, 6, 7 } },
+        { u"rebab-pelog", { 1, 2, 3, 4, 5, 6, 7 } },
+        { u"suling-pelog", { 1, 2, 3, 4, 5, 6, 7 } },
+        { u"siter-pelog", { 1, 2, 3, 4, 5, 6, 7 } },
+        { u"gong-kemodong-pelog", { 5, 6 } },
+        { u"gong-ageng-pelog", { 6 } },
+        { u"kempul-pelog", { 1, 3, 5, 6, 7 } }
+    } };
+
+    for (const ExpectedProfile& expected : expectedProfiles) {
+        const InstrumentTemplate* instrumentTemplate = searchTemplate(muse::String(expected.instrumentId));
+        ASSERT_NE(instrumentTemplate, nullptr) << muse::String(expected.instrumentId).toStdString();
+        ASSERT_NE(instrumentTemplate->staffTypePreset, nullptr);
+        EXPECT_TRUE(instrumentTemplate->staffTypePreset->isNumericPulseStaff());
+
+        const NumericPulseProfile& profile = instrumentTemplate->numericPulseProfile;
+        ASSERT_TRUE(profile.isValid()) << muse::String(expected.instrumentId).toStdString();
+        ASSERT_EQ(profile.degrees.size(), expected.degrees.size());
+        for (size_t i = 0; i < expected.degrees.size(); ++i) {
+            EXPECT_EQ(profile.degrees[i].number, expected.degrees[i]);
+        }
     }
 }
 
@@ -419,6 +454,29 @@ TEST(Engraving_GamelanNotationTests, SaveReloadPreservesStaffAndPulseData)
     EXPECT_EQ(firstChord->upNote()->pitch(), 69);
     EXPECT_EQ(secondChord->upNote()->pitch(), 67);
     EXPECT_EQ(secondChord->durationType().type(), DurationType::V_EIGHTH);
+
+    delete reopened;
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, AdditionalInstrumentProfileSurvivesSaveReload)
+{
+    MasterScore* score = makeNumericPulseScore(u"kempul-pelog");
+    ASSERT_NE(score, nullptr);
+    enterDegree(score, 7);
+
+    const String savePath = u"kempul-pelog-roundtrip.mscx";
+    ASSERT_TRUE(ScoreRW::saveScore(score, savePath));
+    MasterScore* reopened = ScoreRW::readScore(savePath, true);
+    ASSERT_NE(reopened, nullptr);
+
+    const NumericPulseProfile* profile = numericPulseProfile(reopened->staff(0), Fraction(0, 1));
+    ASSERT_NE(profile, nullptr);
+    EXPECT_EQ(profile->id, muse::String(u"kempul-pelog"));
+    Chord* chord = reopened->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    EXPECT_EQ(chord->upNote()->pitch(), 59);
+    EXPECT_EQ(numericPulseDegreeText(profile, chord->upNote()->pitch()), muse::String(u"7"));
 
     delete reopened;
     delete score;
