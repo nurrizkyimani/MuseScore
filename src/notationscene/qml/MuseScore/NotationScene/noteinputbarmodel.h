@@ -57,6 +57,8 @@ public:
     bool isInputAllowed() const;
     bool isGamelanStaff() const;
 
+    Q_INVOKABLE void handleMenuItem(const QString& itemId) override;
+
 signals:
     void isInputAllowedChanged();
     void isGamelanStaffChanged();
@@ -71,6 +73,8 @@ private:
     void componentComplete() override {}
     void init();
     void load() override;
+    void onActionsStateChanges(const muse::actions::ActionCodeList& codes) override;
+    QString currentGamelanDurationAction() const;
 
     muse::uicomponents::MenuItem* makeActionItem(const muse::ui::UiAction& action, const QString& section,
                                                  const muse::uicomponents::MenuItemList& subitems = {});
@@ -89,5 +93,6 @@ private:
     muse::uicomponents::MenuItemList makeChordAndFretboardDiagramsItems();
 
     std::unique_ptr<muse::async::Asyncable> m_noteInputStateReceiver;
+    QString m_selectedGamelanDegreeAction;
 };
 }

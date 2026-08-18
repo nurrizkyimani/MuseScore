@@ -4,9 +4,11 @@
  */
 #pragma once
 
-#include "draw/font.h"
+#include <algorithm>
+
 #include "draw/fontmetrics.h"
-#include "global/types/geometry.h"
+#include "draw/types/font.h"
+#include "draw/types/geometry.h"
 #include "global/types/string.h"
 
 namespace mu::engraving::rendering::score {
@@ -29,6 +31,27 @@ inline muse::RectF gamelanTextBbox(const muse::String& text, double scale)
 inline double gamelanTextOriginX(const muse::String& text, double scale)
 {
     return -muse::draw::FontMetrics(gamelanFont(scale)).horizontalAdvance(text) * 0.5;
+}
+
+inline double gamelanDurationMarkWidth(const muse::RectF& textBbox, double spatium)
+{
+    return std::max(textBbox.width(), 0.9 * spatium);
+}
+
+inline double gamelanDurationMarkY(const muse::RectF& textBbox, double spatium, int index)
+{
+    return textBbox.top() - (0.22 + 0.24 * index) * spatium;
+}
+
+inline muse::RectF gamelanNoteBbox(const muse::String& text, double scale, double spatium, int durationMarks)
+{
+    muse::RectF bbox = gamelanTextBbox(text, scale);
+    if (durationMarks > 0) {
+        const double width = gamelanDurationMarkWidth(bbox, spatium);
+        const double top = gamelanDurationMarkY(bbox, spatium, durationMarks - 1) - 0.06 * spatium;
+        bbox = bbox.united(muse::RectF(-width * 0.5, top, width, 0.12 * spatium));
+    }
+    return bbox;
 }
 
 }

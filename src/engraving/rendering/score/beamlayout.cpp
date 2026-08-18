@@ -339,6 +339,8 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
 
     item->setStartAnchor(BeamTremoloLayout::chordBeamAnchor(item->ldata(), startChord, ChordBeamAnchorType::Start));
     item->setEndAnchor(BeamTremoloLayout::chordBeamAnchor(item->ldata(), endChord, ChordBeamAnchorType::End));
+    const StaffType* staffType = item->staffType();
+    const bool isGamelanStaff = staffType && staffType->isGamelanStaff();
 
     if (item->isGrace()) {
         item->setBeamDist(item->beamDist() * ctx.conf().styleD(Sid::graceNoteMag));
@@ -359,6 +361,9 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
         endY += item->pagePos().y();
         item->startAnchor().setY(startY);
         item->endAnchor().setY(endY);
+        if (isGamelanStaff) {
+            item->endAnchor().setY(item->startAnchor().y());
+        }
         item->mutldata()->setAnchors(item->startAnchor(), item->endAnchor());
         item->computeAndSetSlope();
         createBeamSegments(item, ctx, chordRests);
@@ -374,6 +379,10 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
         BeamTremoloLayout::calculateAnchors(item, item->mutldata(), ctx, chordRests, item->notePositions());
         item->setStartAnchor(item->ldata()->startAnchor);
         item->setEndAnchor(item->ldata()->endAnchor);
+        if (isGamelanStaff) {
+            item->endAnchor().setY(item->startAnchor().y());
+        }
+        item->mutldata()->setAnchors(item->startAnchor(), item->endAnchor());
         item->computeAndSetSlope();
         item->setBeamDist(item->ldata()->beamDist);
     } else {

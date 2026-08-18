@@ -2035,6 +2035,12 @@ void TDraw::draw(const Harmony* item, Painter* painter, const PaintOptions& opt)
 void TDraw::draw(const Hook* item, Painter* painter, const PaintOptions& opt)
 {
     TRACE_DRAW_ITEM;
+    const StaffType* staffType = item->staff() && item->chord()
+                                 ? item->staff()->staffTypeForElement(item->chord()) : nullptr;
+    if (staffType && staffType->isGamelanStaff()) {
+        return;
+    }
+
     // hide if belonging to the second chord of a cross-measure pair
     if (item->chord() && item->chord()->crossMeasure() == CrossMeasure::SECOND) {
         return;
@@ -2349,6 +2355,18 @@ void TDraw::draw(const Note* item, Painter* painter, const PaintOptions& opt)
         const String text = slendroDegreeText(item->pitch());
         painter->setFont(gamelanFont(item->magS()));
         painter->drawText(PointF(gamelanTextOriginX(text, item->magS()), 0.0), text);
+
+        const Chord* chord = item->chord();
+        const int durationMarks = chord && !chord->beam() ? chord->durationType().hooks() : 0;
+        if (durationMarks > 0) {
+            const RectF textBbox = gamelanTextBbox(text, item->magS());
+            const double width = gamelanDurationMarkWidth(textBbox, item->spatium());
+            painter->setPen(Pen(item->curColor(opt), 0.10 * item->spatium(), PenStyle::SolidLine, PenCapStyle::FlatCap));
+            for (int i = 0; i < durationMarks; ++i) {
+                const double y = gamelanDurationMarkY(textBbox, item->spatium(), i);
+                painter->drawLine(LineF(-width * 0.5, y, width * 0.5, y));
+            }
+        }
         return;
     }
 
@@ -2870,6 +2888,9 @@ void TDraw::draw(const Stem* item, Painter* painter, const PaintOptions& opt)
 
     const Staff* staff = item->staff();
     const StaffType* staffType = staff ? staff->staffTypeForElement(item->chord()) : nullptr;
+    if (staffType && staffType->isGamelanStaff()) {
+        return;
+    }
     const bool isTablature = staffType && staffType->isTabStaff();
 
     painter->setPen(Pen(item->curColor(opt), item->lineWidthMag(), PenStyle::SolidLine, PenCapStyle::FlatCap));

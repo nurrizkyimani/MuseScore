@@ -51,7 +51,9 @@ double StemLayout::calcDefaultStemLength(Chord* item, const LayoutContext& ctx)
 
     const StaffType* staffType = staff ? staff->staffTypeForElement(item) : nullptr;
     if (staffType && staffType->isGamelanStaff()) {
-        return 2.5 * spatium;
+        // Keep grouped rhythm bars close to the numeric glyphs while leaving
+        // enough room for additional sixteenth/shorter-note beams.
+        return 2.35 * spatium;
     }
     const StaffType* tab = (staffType && staffType->isTabStaff()) ? staffType : nullptr;
 

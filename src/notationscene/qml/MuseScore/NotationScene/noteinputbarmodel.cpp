@@ -49,6 +49,35 @@ static const ActionCode ADD_ACTION_CODE("add");
 static const ActionCode CROSS_STAFF_BEAMING_CODE("cross-staff-beaming");
 static const ActionCode TUPLET_ACTION_CODE("tuplet");
 
+static bool isGamelanDegreeAction(const QString& actionId)
+{
+    return actionId == QStringLiteral("note-c")
+           || actionId == QStringLiteral("note-d")
+           || actionId == QStringLiteral("note-e")
+           || actionId == QStringLiteral("note-g")
+           || actionId == QStringLiteral("note-a");
+}
+
+static bool isDurationAction(const QString& actionId)
+{
+    return actionId == QStringLiteral("pad-note-1")
+           || actionId == QStringLiteral("pad-note-2")
+           || actionId == QStringLiteral("pad-note-4")
+           || actionId == QStringLiteral("pad-note-8")
+           || actionId == QStringLiteral("pad-note-16")
+           || actionId == QStringLiteral("pad-note-32")
+           || actionId == QStringLiteral("pad-note-64")
+           || actionId == QStringLiteral("pad-note-128")
+           || actionId == QStringLiteral("pad-note-256")
+           || actionId == QStringLiteral("pad-note-512")
+           || actionId == QStringLiteral("pad-note-1024");
+}
+
+static bool isAlternativeNoteInputModeAction(const ActionCode& actionCode)
+{
+    return actionCode.rfind("note-input-", 0) == 0;
+}
+
 NoteInputBarModel::NoteInputBarModel(QObject* parent)
     : AbstractMenuModel(parent)
 {
@@ -91,10 +120,10 @@ void NoteInputBarModel::init()
     const auto listenToNoteInputState = [this]() {
         m_noteInputStateReceiver = std::make_unique<muse::async::Asyncable>();
         INotationPtr notation = context()->currentNotation();
-        if (!notation || !notation->noteInput()) {
+        if (!notation || !notation->interaction() || !notation->interaction()->noteInput()) {
             return;
         }
-        notation->noteInput()->stateChanged().onNotify(m_noteInputStateReceiver.get(), [this]() {
+        notation->interaction()->noteInput()->stateChanged().onNotify(m_noteInputStateReceiver.get(), [this]() {
             load();
             emit isGamelanStaffChanged();
         });
@@ -109,12 +138,13 @@ void NoteInputBarModel::init()
         load();
     });
 
-    context()->currentNotationChanged().onNotify(this, [this]() {
+    context()->currentNotationChanged().onNotify(this, [this, listenToNoteInputState]() {
+        m_selectedGamelanDegreeAction.clear();
+        listenToNoteInputState();
         load();
         emit isGamelanStaffChanged();
     });
 
-    context()->currentNotationChanged().onNotify(this, listenToNoteInputState);
     listenToNoteInputState();
 
     load();
@@ -123,17 +153,48 @@ void NoteInputBarModel::init()
 void NoteInputBarModel::load()
 {
     MenuItemList items;
+    const bool gamelanStaff = isGamelanStaff();
+    const QString selectedDurationAction = gamelanStaff ? currentGamelanDurationAction() : QString();
 
-    if (isGamelanStaff()) {
-        static const std::pair<ActionCode, const char*> gamelanActions[] = {
-            { "note-c", "1" }, { "note-d", "2" }, { "note-e", "3" },
-            { "note-g", "5" }, { "note-a", "6" }
+    if (gamelanStaff) {
+        struct GamelanAction {
+            ActionCode code;
+            const char* title;
+            const char* section;
+            bool textButton;
         };
-        for (const auto& [code, degree] : gamelanActions) {
-            UiAction action = uiActionsRegister()->action(code);
-            action.title = TranslatableString::untranslatable(degree);
-            action.iconCode = IconCode::Code::NONE;
-            items << makeActionItem(action, QStringLiteral("0"));
+        static const GamelanAction gamelanActions[] = {
+            { "note-input-by-note-name", "Saron Slendro input", "gamelan-input", false },
+            { "note-c", "1", "gamelan-degree", true }, { "note-d", "2", "gamelan-degree", true },
+            { "note-e", "3", "gamelan-degree", true }, { "note-g", "5", "gamelan-degree", true },
+            { "note-a", "6", "gamelan-degree", true },
+            { "pad-note-4", "One pulse", "gamelan-pulse", true },
+            { "pad-note-8", "Half pulse", "gamelan-pulse", true },
+            { "pad-note-16", "Quarter pulse", "gamelan-pulse", true },
+            // Unlike pad-rest, the "rest" action enters one rest immediately
+            // and advances the cursor. The Gamelan renderer displays that rest
+            // as an empty-pulse dot.
+            { "rest", "Empty pulse", "gamelan-rhythm", true },
+            { "tie", "Continue / tie", "gamelan-rhythm", true }
+        };
+        for (const GamelanAction& definition : gamelanActions) {
+            UiAction action = uiActionsRegister()->action(definition.code);
+            action.title = TranslatableString::untranslatable(definition.title);
+            if (definition.textButton) {
+                action.iconCode = IconCode::Code::NONE;
+            }
+            MenuItem* item = makeActionItem(action, QString::fromLatin1(definition.section));
+            const QString actionId = QString::fromStdString(definition.code);
+            if (isGamelanDegreeAction(actionId)) {
+                UiActionState state = item->state();
+                state.checked = actionId == m_selectedGamelanDegreeAction;
+                item->setState(state);
+            } else if (isDurationAction(actionId)) {
+                UiActionState state = item->state();
+                state.checked = actionId == selectedDurationAction;
+                item->setState(state);
+            }
+            items << item;
         }
     }
 
@@ -142,6 +203,13 @@ void NoteInputBarModel::load()
     int section = 0;
     for (const ToolConfig::Item& citem : noteInputConfig.items) {
         if (!citem.show) {
+            continue;
+        }
+
+        // Saron has one predictable numeric input mode. Keep the original
+        // editing controls, but omit Western alternate entry modes which make
+        // duration buttons insert the stored/default pitch.
+        if (gamelanStaff && isAlternativeNoteInputModeAction(citem.action)) {
             continue;
         }
 
@@ -157,11 +225,23 @@ void NoteInputBarModel::load()
             subitems = makeTupletItems();
         }
 
-        MenuItem* item = makeActionItem(uiActionsRegister()->action(citem.action), QString::number(section), subitems);
+        const QString sectionName = gamelanStaff
+                                    ? QStringLiteral("western-%1").arg(section)
+                                    : QString::number(section);
+        MenuItem* item = makeActionItem(uiActionsRegister()->action(citem.action), sectionName, subitems);
+        const QString actionId = QString::fromStdString(citem.action);
+        if (gamelanStaff && isDurationAction(actionId)) {
+            UiActionState state = item->state();
+            state.checked = actionId == selectedDurationAction;
+            item->setState(state);
+        }
         items << item;
     }
 
-    items << makeAddItem(QString::number(++section));
+    const QString addSection = gamelanStaff
+                               ? QStringLiteral("western-%1").arg(++section)
+                               : QString::number(++section);
+    items << makeAddItem(addSection);
     setItems(items);
 }
 
@@ -173,20 +253,98 @@ bool NoteInputBarModel::isInputAllowed() const
 bool NoteInputBarModel::isGamelanStaff() const
 {
     INotationPtr notation = context()->currentNotation();
-    if (!notation || !notation->noteInput()) {
+    if (!notation || !notation->interaction() || !notation->interaction()->noteInput()) {
         return false;
     }
 
-    const NoteInputState& state = notation->noteInput()->state();
+    const NoteInputState& state = notation->interaction()->noteInput()->state();
     const engraving::Staff* staff = state.staff();
     const engraving::StaffType* staffType = staff ? staff->staffType(state.tick()) : nullptr;
     return staffType && staffType->isGamelanStaff();
+}
+
+void NoteInputBarModel::handleMenuItem(const QString& itemId)
+{
+    const bool gamelanStaff = isGamelanStaff();
+    const bool selectGamelanDegree = gamelanStaff && isGamelanDegreeAction(itemId);
+
+    if (gamelanStaff && isDurationAction(itemId)) {
+        INotationPtr notation = context()->currentNotation();
+        INotationNoteInputPtr noteInput = notation && notation->interaction()
+                                                ? notation->interaction()->noteInput()
+                                                : nullptr;
+        if (noteInput && noteInput->isNoteInputMode()
+            && !noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+            noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+        }
+    }
+
+    AbstractMenuModel::handleMenuItem(itemId);
+
+    if (selectGamelanDegree) {
+        m_selectedGamelanDegreeAction = itemId;
+        load();
+    }
+}
+
+void NoteInputBarModel::onActionsStateChanges(const ActionCodeList& codes)
+{
+    AbstractMenuModel::onActionsStateChanges(codes);
+
+    if (!isGamelanStaff()) {
+        return;
+    }
+
+    const QString selectedDurationAction = currentGamelanDurationAction();
+    for (MenuItem* item : items()) {
+        if (!item) {
+            continue;
+        }
+
+        UiActionState state = item->state();
+        if (item->section() == QStringLiteral("gamelan-degree")) {
+            state.checked = item->id() == m_selectedGamelanDegreeAction;
+            item->setState(state);
+        } else if (isDurationAction(item->id())) {
+            state.checked = item->id() == selectedDurationAction;
+            item->setState(state);
+        }
+    }
+}
+
+QString NoteInputBarModel::currentGamelanDurationAction() const
+{
+    INotationPtr notation = context()->currentNotation();
+    if (!notation || !notation->interaction() || !notation->interaction()->noteInput()) {
+        return {};
+    }
+
+    switch (notation->interaction()->noteInput()->state().duration().type()) {
+    case engraving::DurationType::V_WHOLE: return QStringLiteral("pad-note-1");
+    case engraving::DurationType::V_HALF: return QStringLiteral("pad-note-2");
+    case engraving::DurationType::V_QUARTER: return QStringLiteral("pad-note-4");
+    case engraving::DurationType::V_EIGHTH: return QStringLiteral("pad-note-8");
+    case engraving::DurationType::V_16TH: return QStringLiteral("pad-note-16");
+    case engraving::DurationType::V_32ND: return QStringLiteral("pad-note-32");
+    case engraving::DurationType::V_64TH: return QStringLiteral("pad-note-64");
+    case engraving::DurationType::V_128TH: return QStringLiteral("pad-note-128");
+    case engraving::DurationType::V_256TH: return QStringLiteral("pad-note-256");
+    case engraving::DurationType::V_512TH: return QStringLiteral("pad-note-512");
+    case engraving::DurationType::V_1024TH: return QStringLiteral("pad-note-1024");
+    default: return {};
+    }
 }
 
 MenuItem* NoteInputBarModel::makeActionItem(const UiAction& action, const QString& section,
                                             const muse::uicomponents::MenuItemList& subitems)
 {
     MenuItem* item = new MenuItem(action, this);
+    // "add" is a local toolbar menu action, not an action registered in
+    // UiActionsRegister. Querying its state produces a noisy error on every
+    // toolbar reload.
+    if (action.code != ADD_ACTION_CODE) {
+        item->setState(uiActionsRegister()->actionState(action.code));
+    }
     item->setSection(section);
     item->setSubitems(subitems);
     return item;

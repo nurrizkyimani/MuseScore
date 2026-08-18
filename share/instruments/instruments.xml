@@ -6525,8 +6525,8 @@
             <Instrument id="saron-slendro">
                   <family>keyboard-percussion</family>
                   <trackName>Saron (Slendro)</trackName>
-                  <longName>Saron</longName>
-                  <shortName>Saron</shortName>
+                  <longName>Saron (Slendro)</longName>
+                  <shortName>Saron Sl.</shortName>
                   <description>Saron using Slendro numeric notation.</description>
                   <musicXMLid>pitched-percussion.metallophone</musicXMLid>
                   <stafftype staffTypePreset="stdGamelanSlendro">pitched</stafftype>

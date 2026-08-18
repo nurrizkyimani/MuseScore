@@ -4151,7 +4151,9 @@ void TLayout::layoutNote(const Note* item, Note::LayoutData* ldata)
 
     RectF noteBBox;
     if (useGamelan) {
-        noteBBox = gamelanTextBbox(slendroDegreeText(item->pitch()), item->magS());
+        const bool hasNativeBeam = item->chord() && item->chord()->beam();
+        const int durationMarks = hasNativeBeam ? 0 : item->chord()->durationType().hooks();
+        noteBBox = gamelanNoteBbox(slendroDegreeText(item->pitch()), item->magS(), item->spatium(), durationMarks);
         ldata->cachedNoteheadSym.set_value(SymId::noSym);
         ldata->cachedSymNull.set_value(SymId::noSym);
     } else if (useTablature) {

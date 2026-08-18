@@ -45,7 +45,9 @@ std::optional<int> diatonicStepForSlendroDegree(int degree)
 muse::String slendroDegreeText(int pitch)
 {
     const std::optional<int> degree = slendroDegreeForPitch(pitch);
-    return degree ? muse::String::number(*degree) : muse::String(u"?");
+    // Direct Gamelan input rejects unsupported pitches. Keep imported invalid
+    // pitches visible without pretending that they are a Slendro degree.
+    return degree ? muse::String::number(*degree) : muse::String(u"×");
 }
 
 }

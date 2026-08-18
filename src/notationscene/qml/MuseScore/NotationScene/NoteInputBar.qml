@@ -54,18 +54,43 @@ Item {
     QtObject {
         id: prv
 
+        function horizontalContentWidth() {
+            var sections = ({})
+            var sectionCount = 0
+
+            for (var i = 0; i < noteInputModel.length; ++i) {
+                var section = noteInputModel.get(i).section
+                if (sections[section] === undefined) {
+                    sections[section] = true
+                    ++sectionCount
+                }
+            }
+
+            if (noteInputModel.length === 0) {
+                return 0
+            }
+
+            // Each item occupies one cell plus column spacing. Each section
+            // contributes its separator and the spacing before the next one.
+            return noteInputModel.length * (gridView.cellWidth + gridView.columnSpacing)
+                   + sectionCount
+                   + Math.max(0, sectionCount - 1) * gridView.columnSpacing
+        }
+
         function resolveHorizontalGridViewWidth() {
+            var contentWidth = horizontalContentWidth()
+
             if (root.floating) {
-                return gridView.contentWidth
+                return contentWidth
             }
 
             var requiredFreeSpace = gridView.cellWidth * 3 + gridView.rowSpacing * 4
 
-            if (root.maximumWidth - gridView.contentWidth < requiredFreeSpace) {
-                return gridView.contentWidth - requiredFreeSpace
+            if (root.maximumWidth - contentWidth < requiredFreeSpace) {
+                return contentWidth - requiredFreeSpace
             }
 
-            return gridView.contentWidth
+            return contentWidth
         }
 
         function resolveVerticalGridViewHeight() {
@@ -115,8 +140,15 @@ Item {
 
             readonly property MenuItem item: Boolean(itemModel) ? itemModel.item : null
             readonly property bool hasMenu: Boolean(item) && item.subitems.length !== 0
-            readonly property bool isGamelanDegree: noteInputModel.isGamelanStaff
-                                                      && ["note-c", "note-d", "note-e", "note-g", "note-a"].indexOf(item.id) !== -1
+            readonly property var gamelanLabels: ({
+                "note-c": "1", "note-d": "2", "note-e": "3", "note-g": "5", "note-a": "6",
+                "pad-note-4": "1", "pad-note-8": "½", "pad-note-16": "¼",
+                "rest": ".", "tie": "—"
+            })
+            readonly property bool useGamelanLabel: noteInputModel.isGamelanStaff
+                                                    && Boolean(item)
+                                                    && item.section.startsWith("gamelan-")
+                                                    && gamelanLabels[item.id] !== undefined
 
             width: gridView.cellWidth
             height: gridView.cellWidth
@@ -126,8 +158,8 @@ Item {
             accentButton: (Boolean(item) && item.checked) || menuLoader.isMenuOpened
             transparent: !accentButton
 
-            icon: Boolean(item) && !isGamelanDegree ? item.icon : IconCode.NONE
-            text: isGamelanDegree ? item.title : ""
+            icon: Boolean(item) && !useGamelanLabel ? item.icon : IconCode.NONE
+            text: useGamelanLabel ? gamelanLabels[item.id] : ""
             iconFont: ui.theme.toolbarIconsFont
 
             toolTipTitle: Boolean(item) ? item.title : ""
