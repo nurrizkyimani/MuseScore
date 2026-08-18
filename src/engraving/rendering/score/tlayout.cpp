@@ -22,7 +22,7 @@
 #include <cfloat>
 
 #include "tlayout.h"
-#include "gamelanrendering.h"
+#include "numericpulserendering.h"
 
 #include "global/realfn.h"
 #include "global/types/number.h"
@@ -63,7 +63,7 @@
 #include "dom/figuredbass.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
-#include "dom/gamelannotation.h"
+#include "dom/numericpulseprofile.h"
 
 #include "dom/glissando.h"
 #include "dom/gradualtempochange.h"
@@ -4144,16 +4144,18 @@ void TLayout::layoutNote(const Note* item, Note::LayoutData* ldata)
         ldata->setPos(PointF());
     }
 
-    const StaffType* staffType = item->staff() ? item->staff()->staffTypeForElement(item) : nullptr;
-    const bool useGamelan = staffType && staffType->isGamelanStaff();
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    const bool useNumericPulse = numericProfile != nullptr;
     bool useTablature = item->staff() && item->staff()->isTabStaff(item->chord()->tick());
     ldata->useTablature.set_value(useTablature);
 
     RectF noteBBox;
-    if (useGamelan) {
+    if (useNumericPulse) {
         const bool hasNativeBeam = item->chord() && item->chord()->beam();
-        const int durationMarks = hasNativeBeam ? 0 : item->chord()->durationType().hooks();
-        noteBBox = gamelanNoteBbox(slendroDegreeText(item->pitch()), item->magS(), item->spatium(), durationMarks);
+        const int durationMarks = hasNativeBeam || !numericProfile->durationMarksAbove
+                                  ? 0 : item->chord()->durationType().hooks();
+        noteBBox = numericPulseNoteBbox(numericPulseDegreeText(numericProfile, item->pitch()),
+                                        item->magS(), item->spatium(), durationMarks);
         ldata->cachedNoteheadSym.set_value(SymId::noSym);
         ldata->cachedSymNull.set_value(SymId::noSym);
     } else if (useTablature) {

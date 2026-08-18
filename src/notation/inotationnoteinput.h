@@ -47,6 +47,7 @@ public:
     virtual void setNoteInputMethod(NoteInputMethod method) = 0;
 
     virtual void addNote(const NoteInputParams& params, NoteAddingMode addingMode) = 0;
+    virtual void addRest() = 0;
     virtual void setDuration(engraving::DurationType duration) = 0;
     virtual void toggleRest() = 0;
     virtual void toggleDots(int dots) = 0;

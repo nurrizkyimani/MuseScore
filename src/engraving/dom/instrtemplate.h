@@ -29,6 +29,7 @@
 #include "clef.h"
 #include "instrument.h"
 #include "mscore.h"
+#include "numericpulseprofile.h"
 #include "stringdata.h"
 
 namespace mu::engraving {
@@ -126,6 +127,7 @@ public:
     String groupId;
 
     GlissandoStyle glissandoStyle = GlissandoStyle::CHROMATIC;
+    NumericPulseProfile numericPulseProfile;
 
     bool isValid() const;
 

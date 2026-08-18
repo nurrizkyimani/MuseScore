@@ -33,8 +33,10 @@
 
 #include "internal/notationuiactions.h"
 #include "notationcommands.h"
+#include "engraving/dom/engravingitem.h"
+#include "engraving/dom/numericpulseprofile.h"
+#include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
-#include "engraving/dom/stafftype.h"
 
 using namespace mu;
 using namespace mu::notation;
@@ -49,13 +51,17 @@ static const ActionCode ADD_ACTION_CODE("add");
 static const ActionCode CROSS_STAFF_BEAMING_CODE("cross-staff-beaming");
 static const ActionCode TUPLET_ACTION_CODE("tuplet");
 
-static bool isGamelanDegreeAction(const QString& actionId)
+static bool isNumericDegreeAction(const QString& actionId, const engraving::NumericPulseProfile* profile)
 {
-    return actionId == QStringLiteral("note-c")
-           || actionId == QStringLiteral("note-d")
-           || actionId == QStringLiteral("note-e")
-           || actionId == QStringLiteral("note-g")
-           || actionId == QStringLiteral("note-a");
+    if (!profile) {
+        return false;
+    }
+    for (const engraving::NumericPulseDegree& degree : profile->degrees) {
+        if (degree.action.toQString() == actionId) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static bool isDurationAction(const QString& actionId)
@@ -125,7 +131,7 @@ void NoteInputBarModel::init()
         }
         notation->interaction()->noteInput()->stateChanged().onNotify(m_noteInputStateReceiver.get(), [this]() {
             load();
-            emit isGamelanStaffChanged();
+            emit usesNumericPulseChanged();
         });
     };
 
@@ -139,10 +145,10 @@ void NoteInputBarModel::init()
     });
 
     context()->currentNotationChanged().onNotify(this, [this, listenToNoteInputState]() {
-        m_selectedGamelanDegreeAction.clear();
+        m_selectedNumericDegreeAction.clear();
         listenToNoteInputState();
         load();
-        emit isGamelanStaffChanged();
+        emit usesNumericPulseChanged();
     });
 
     listenToNoteInputState();
@@ -153,31 +159,43 @@ void NoteInputBarModel::init()
 void NoteInputBarModel::load()
 {
     MenuItemList items;
-    const bool gamelanStaff = isGamelanStaff();
-    const QString selectedDurationAction = gamelanStaff ? currentGamelanDurationAction() : QString();
+    const engraving::NumericPulseProfile* numericProfile = activeNumericPulseProfile();
+    const bool usesNumericProfile = numericProfile != nullptr;
+    const QString selectedDurationAction = usesNumericProfile ? currentNumericPulseDurationAction() : QString();
 
-    if (gamelanStaff) {
-        struct GamelanAction {
+    if (usesNumericProfile) {
+        struct NumericPulseAction {
             ActionCode code;
             const char* title;
             const char* section;
             bool textButton;
         };
-        static const GamelanAction gamelanActions[] = {
-            { "note-input-by-note-name", "Saron Slendro input", "gamelan-input", false },
-            { "note-c", "1", "gamelan-degree", true }, { "note-d", "2", "gamelan-degree", true },
-            { "note-e", "3", "gamelan-degree", true }, { "note-g", "5", "gamelan-degree", true },
-            { "note-a", "6", "gamelan-degree", true },
-            { "pad-note-4", "One pulse", "gamelan-pulse", true },
-            { "pad-note-8", "Half pulse", "gamelan-pulse", true },
-            { "pad-note-16", "Quarter pulse", "gamelan-pulse", true },
+        static const NumericPulseAction numericPulseActions[] = {
+            { "pad-note-4", "One pulse", "numeric-pulse", true },
+            { "pad-note-8", "Half pulse", "numeric-pulse", true },
+            { "pad-note-16", "Quarter pulse", "numeric-pulse", true },
             // Unlike pad-rest, the "rest" action enters one rest immediately
-            // and advances the cursor. The Gamelan renderer displays that rest
-            // as an empty-pulse dot.
-            { "rest", "Empty pulse", "gamelan-rhythm", true },
-            { "tie", "Continue / tie", "gamelan-rhythm", true }
+            // and advances the cursor. Numeric-pulse rendering displays it as a dot.
+            { "rest", "Empty pulse", "numeric-rhythm", true },
+            { "tie", "Continue / tie", "numeric-rhythm", true }
         };
-        for (const GamelanAction& definition : gamelanActions) {
+
+        UiAction inputAction = uiActionsRegister()->action(ActionCode("note-input-by-note-name"));
+        inputAction.title = TranslatableString::untranslatable("Numeric pulse input");
+        items << makeActionItem(inputAction, QStringLiteral("numeric-input"));
+
+        for (const engraving::NumericPulseDegree& degree : numericProfile->degrees) {
+            UiAction action = uiActionsRegister()->action(ActionCode(degree.action.toStdString()));
+            action.title = TranslatableString::untranslatable(degree.label);
+            action.iconCode = IconCode::Code::NONE;
+            MenuItem* item = makeActionItem(action, QStringLiteral("numeric-degree"));
+            UiActionState state = item->state();
+            state.checked = degree.action.toQString() == m_selectedNumericDegreeAction;
+            item->setState(state);
+            items << item;
+        }
+
+        for (const NumericPulseAction& definition : numericPulseActions) {
             UiAction action = uiActionsRegister()->action(definition.code);
             action.title = TranslatableString::untranslatable(definition.title);
             if (definition.textButton) {
@@ -185,11 +203,7 @@ void NoteInputBarModel::load()
             }
             MenuItem* item = makeActionItem(action, QString::fromLatin1(definition.section));
             const QString actionId = QString::fromStdString(definition.code);
-            if (isGamelanDegreeAction(actionId)) {
-                UiActionState state = item->state();
-                state.checked = actionId == m_selectedGamelanDegreeAction;
-                item->setState(state);
-            } else if (isDurationAction(actionId)) {
+            if (isDurationAction(actionId)) {
                 UiActionState state = item->state();
                 state.checked = actionId == selectedDurationAction;
                 item->setState(state);
@@ -206,10 +220,10 @@ void NoteInputBarModel::load()
             continue;
         }
 
-        // Saron has one predictable numeric input mode. Keep the original
+        // Numeric-pulse notation has one predictable input mode. Keep the original
         // editing controls, but omit Western alternate entry modes which make
         // duration buttons insert the stored/default pitch.
-        if (gamelanStaff && isAlternativeNoteInputModeAction(citem.action)) {
+        if (usesNumericProfile && isAlternativeNoteInputModeAction(citem.action)) {
             continue;
         }
 
@@ -225,12 +239,12 @@ void NoteInputBarModel::load()
             subitems = makeTupletItems();
         }
 
-        const QString sectionName = gamelanStaff
+        const QString sectionName = usesNumericProfile
                                     ? QStringLiteral("western-%1").arg(section)
                                     : QString::number(section);
         MenuItem* item = makeActionItem(uiActionsRegister()->action(citem.action), sectionName, subitems);
         const QString actionId = QString::fromStdString(citem.action);
-        if (gamelanStaff && isDurationAction(actionId)) {
+        if (usesNumericProfile && isDurationAction(actionId)) {
             UiActionState state = item->state();
             state.checked = actionId == selectedDurationAction;
             item->setState(state);
@@ -238,7 +252,7 @@ void NoteInputBarModel::load()
         items << item;
     }
 
-    const QString addSection = gamelanStaff
+    const QString addSection = usesNumericProfile
                                ? QStringLiteral("western-%1").arg(++section)
                                : QString::number(++section);
     items << makeAddItem(addSection);
@@ -250,39 +264,79 @@ bool NoteInputBarModel::isInputAllowed() const
     return commandsController()->isNoteInputAllowed();
 }
 
-bool NoteInputBarModel::isGamelanStaff() const
+const engraving::NumericPulseProfile* NoteInputBarModel::activeNumericPulseProfile() const
 {
     INotationPtr notation = context()->currentNotation();
     if (!notation || !notation->interaction() || !notation->interaction()->noteInput()) {
-        return false;
+        return nullptr;
     }
 
     const NoteInputState& state = notation->interaction()->noteInput()->state();
     const engraving::Staff* staff = state.staff();
-    const engraving::StaffType* staffType = staff ? staff->staffType(state.tick()) : nullptr;
-    return staffType && staffType->isGamelanStaff();
+    if (const engraving::NumericPulseProfile* profile = engraving::numericPulseProfile(staff, state.tick())) {
+        return profile;
+    }
+
+    INotationSelectionPtr selection = notation->interaction()->selection();
+    const engraving::EngravingItem* selectedElement = selection ? selection->element() : nullptr;
+    if (selectedElement) {
+        if (const engraving::NumericPulseProfile* profile
+                = engraving::numericPulseProfile(selectedElement->staff(), selectedElement->tick())) {
+            return profile;
+        }
+    }
+
+    // A newly-created score can have neither an input staff nor a selected
+    // element yet. Use its first staff so Numeric Pulse controls are available
+    // before the user chooses a Western duration or enters note-input mode.
+    engraving::Score* score = notation->elements() ? notation->elements()->msScore() : nullptr;
+    return score && score->nstaves() > 0
+           ? engraving::numericPulseProfile(score->staff(0), engraving::Fraction(0, 1))
+           : nullptr;
+}
+
+bool NoteInputBarModel::usesNumericPulse() const
+{
+    return activeNumericPulseProfile() != nullptr;
 }
 
 void NoteInputBarModel::handleMenuItem(const QString& itemId)
 {
-    const bool gamelanStaff = isGamelanStaff();
-    const bool selectGamelanDegree = gamelanStaff && isGamelanDegreeAction(itemId);
+    const engraving::NumericPulseProfile* numericProfile = activeNumericPulseProfile();
+    const bool usesNumericProfile = numericProfile != nullptr;
+    const bool selectNumericDegree = isNumericDegreeAction(itemId, numericProfile);
+    const bool numericDuration = isDurationAction(itemId);
+    const bool enterEmptyPulse = itemId == QStringLiteral("rest");
+    INotationPtr notation = context()->currentNotation();
+    INotationInteractionPtr interaction = notation ? notation->interaction() : nullptr;
 
-    if (gamelanStaff && isDurationAction(itemId)) {
-        INotationPtr notation = context()->currentNotation();
-        INotationNoteInputPtr noteInput = notation && notation->interaction()
-                                                ? notation->interaction()->noteInput()
-                                                : nullptr;
-        if (noteInput && noteInput->isNoteInputMode()
-            && !noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
-            noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+    if (usesNumericProfile && (selectNumericDegree || numericDuration || enterEmptyPulse)) {
+        INotationNoteInputPtr noteInput = interaction ? interaction->noteInput() : nullptr;
+        if (noteInput) {
+            if (!noteInput->isNoteInputMode()) {
+                // Numeric buttons are direct event-entry controls. Do not inherit
+                // MuseScore's configurable Western BY_DURATION default, where the
+                // first degree only primes a pitch and Rest only toggles rest mode.
+                noteInput->startNoteInput(NoteInputMethod::BY_NOTE_NAME);
+            } else if (!noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+                noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+            }
         }
+    }
+
+    if (usesNumericProfile && enterEmptyPulse && interaction) {
+        // Dispatching the generic Rest action immediately after entering note
+        // input can use its stale Western action state and do nothing. Numeric
+        // Pulse's dot is a direct event-entry control, so insert it explicitly.
+        interaction->putRestToSelection();
+        load();
+        return;
     }
 
     AbstractMenuModel::handleMenuItem(itemId);
 
-    if (selectGamelanDegree) {
-        m_selectedGamelanDegreeAction = itemId;
+    if (selectNumericDegree) {
+        m_selectedNumericDegreeAction = itemId;
         load();
     }
 }
@@ -291,19 +345,19 @@ void NoteInputBarModel::onActionsStateChanges(const ActionCodeList& codes)
 {
     AbstractMenuModel::onActionsStateChanges(codes);
 
-    if (!isGamelanStaff()) {
+    if (!usesNumericPulse()) {
         return;
     }
 
-    const QString selectedDurationAction = currentGamelanDurationAction();
+    const QString selectedDurationAction = currentNumericPulseDurationAction();
     for (MenuItem* item : items()) {
         if (!item) {
             continue;
         }
 
         UiActionState state = item->state();
-        if (item->section() == QStringLiteral("gamelan-degree")) {
-            state.checked = item->id() == m_selectedGamelanDegreeAction;
+        if (item->section() == QStringLiteral("numeric-degree")) {
+            state.checked = item->id() == m_selectedNumericDegreeAction;
             item->setState(state);
         } else if (isDurationAction(item->id())) {
             state.checked = item->id() == selectedDurationAction;
@@ -312,7 +366,7 @@ void NoteInputBarModel::onActionsStateChanges(const ActionCodeList& codes)
     }
 }
 
-QString NoteInputBarModel::currentGamelanDurationAction() const
+QString NoteInputBarModel::currentNumericPulseDurationAction() const
 {
     INotationPtr notation = context()->currentNotation();
     if (!notation || !notation->interaction() || !notation->interaction()->noteInput()) {

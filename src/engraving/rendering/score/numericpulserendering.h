@@ -1,0 +1,100 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-only
+ * MuseScore-Studio-CLA-applies
+ */
+#pragma once
+
+#include <algorithm>
+
+#include "draw/fontmetrics.h"
+#include "draw/types/font.h"
+#include "draw/types/geometry.h"
+#include "global/types/string.h"
+
+namespace mu::engraving::rendering::score {
+
+inline double numericPulseRhythmMarkThickness(double spatium)
+{
+    return 0.18 * spatium;
+}
+
+inline double numericPulseRhythmMarkDistance(double spatium)
+{
+    return 0.40 * spatium;
+}
+
+inline double numericPulseRhythmMarkGap(double spatium)
+{
+    return 0.45 * spatium;
+}
+
+inline double numericPulseStemLength(double spatium, int durationMarks)
+{
+    const int additionalMarks = std::max(0, durationMarks - 1);
+    return (2.35 + 0.16 * additionalMarks) * spatium;
+}
+
+inline double numericPulseGroupOverhang(const muse::RectF& textBbox, double spatium)
+{
+    // Beam anchors still originate from the Western notehead attachment point,
+    // which is slightly right-biased for text glyphs such as "5".  Keep enough
+    // overhang for the rhythm mark to visibly pass both edges of every digit.
+    return textBbox.width() * 0.5 + 0.40 * spatium;
+}
+
+inline muse::draw::Font numericPulseFont(double scale)
+{
+    muse::draw::Font font(u"Edwin", muse::draw::Font::Type::Text);
+    font.setPointSizeF(12.0 * scale);
+    return font;
+}
+
+inline muse::RectF numericPulseTextBbox(const muse::String& text, double scale)
+{
+    const muse::draw::Font font = numericPulseFont(scale);
+    muse::RectF bbox = muse::draw::FontMetrics(font).boundingRect(text);
+    bbox.translate(-bbox.center().x(), 0.0);
+    return bbox;
+}
+
+inline double numericPulseTextOriginX(const muse::String& text, double scale)
+{
+    return -muse::draw::FontMetrics(numericPulseFont(scale)).horizontalAdvance(text) * 0.5;
+}
+
+inline muse::RectF numericPulseEmptyPulseBbox(double spatium)
+{
+    // Do not use a text period here. Its glyph sits on the numeric-pulse staff
+    // baseline and can disappear into the staff line. Keep the pulse dot fully
+    // above that line and large enough to remain visible at normal zoom levels.
+    const double diameter = 0.34 * spatium;
+    const double centerY = -0.32 * spatium;
+    return muse::RectF(-diameter * 0.5, centerY - diameter * 0.5, diameter, diameter);
+}
+
+inline double numericPulseDurationMarkWidth(const muse::RectF& textBbox, double spatium)
+{
+    // Extend slightly past both sides of the numeric glyph so a standalone
+    // duration mark reads clearly without looking like a full grouped beam.
+    return std::max(textBbox.width() + 0.60 * spatium, 1.30 * spatium);
+}
+
+inline double numericPulseDurationMarkY(const muse::RectF& textBbox, double spatium, int index)
+{
+    return textBbox.top() - numericPulseRhythmMarkGap(spatium)
+           - numericPulseRhythmMarkDistance(spatium) * index;
+}
+
+inline muse::RectF numericPulseNoteBbox(const muse::String& text, double scale, double spatium, int durationMarks)
+{
+    muse::RectF bbox = numericPulseTextBbox(text, scale);
+    if (durationMarks > 0) {
+        const double width = numericPulseDurationMarkWidth(bbox, spatium);
+        const double thickness = numericPulseRhythmMarkThickness(spatium);
+        const double top = numericPulseDurationMarkY(bbox, spatium, durationMarks - 1) - thickness * 0.5;
+        bbox = bbox.united(muse::RectF(-width * 0.5, top, width, thickness));
+    }
+    return bbox;
+}
+
+}

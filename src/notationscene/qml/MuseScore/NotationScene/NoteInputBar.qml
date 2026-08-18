@@ -140,15 +140,18 @@ Item {
 
             readonly property MenuItem item: Boolean(itemModel) ? itemModel.item : null
             readonly property bool hasMenu: Boolean(item) && item.subitems.length !== 0
-            readonly property var gamelanLabels: ({
-                "note-c": "1", "note-d": "2", "note-e": "3", "note-g": "5", "note-a": "6",
+            readonly property var numericPulseLabels: ({
                 "pad-note-4": "1", "pad-note-8": "½", "pad-note-16": "¼",
                 "rest": ".", "tie": "—"
             })
-            readonly property bool useGamelanLabel: noteInputModel.isGamelanStaff
-                                                    && Boolean(item)
-                                                    && item.section.startsWith("gamelan-")
-                                                    && gamelanLabels[item.id] !== undefined
+            readonly property bool useNumericPulseLabel: noteInputModel.usesNumericPulse
+                                                         && Boolean(item)
+                                                         && item.section.startsWith("numeric-")
+                                                         && (item.section === "numeric-degree"
+                                                             || numericPulseLabels[item.id] !== undefined)
+            readonly property string numericPulseLabel: item && item.section === "numeric-degree"
+                                                         ? item.title
+                                                         : numericPulseLabels[item.id] || ""
 
             width: gridView.cellWidth
             height: gridView.cellWidth
@@ -158,8 +161,8 @@ Item {
             accentButton: (Boolean(item) && item.checked) || menuLoader.isMenuOpened
             transparent: !accentButton
 
-            icon: Boolean(item) && !useGamelanLabel ? item.icon : IconCode.NONE
-            text: useGamelanLabel ? gamelanLabels[item.id] : ""
+            icon: Boolean(item) && !useNumericPulseLabel ? item.icon : IconCode.NONE
+            text: useNumericPulseLabel ? numericPulseLabel : ""
             iconFont: ui.theme.toolbarIconsFont
 
             toolTipTitle: Boolean(item) ? item.title : ""

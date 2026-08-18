@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "tdraw.h"
-#include "gamelanrendering.h"
+#include "numericpulserendering.h"
 
 #include "defer.h"
 
@@ -62,7 +62,7 @@
 #include "dom/fret.h"
 
 #include "dom/glissando.h"
-#include "dom/gamelannotation.h"
+#include "dom/numericpulseprofile.h"
 #include "dom/gradualtempochange.h"
 #include "dom/guitarbend.h"
 
@@ -2035,14 +2035,16 @@ void TDraw::draw(const Harmony* item, Painter* painter, const PaintOptions& opt)
 void TDraw::draw(const Hook* item, Painter* painter, const PaintOptions& opt)
 {
     TRACE_DRAW_ITEM;
-    const StaffType* staffType = item->staff() && item->chord()
-                                 ? item->staff()->staffTypeForElement(item->chord()) : nullptr;
-    if (staffType && staffType->isGamelanStaff()) {
+    const Chord* chord = item->chord();
+    const NumericPulseProfile* numericProfile = chord
+                                                ? numericPulseProfile(chord->staff(), chord->tick())
+                                                : numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile && numericProfile->durationMarksAbove) {
         return;
     }
 
     // hide if belonging to the second chord of a cross-measure pair
-    if (item->chord() && item->chord()->crossMeasure() == CrossMeasure::SECOND) {
+    if (chord && chord->crossMeasure() == CrossMeasure::SECOND) {
         return;
     }
 
@@ -2351,19 +2353,22 @@ void TDraw::draw(const Note* item, Painter* painter, const PaintOptions& opt)
 
     painter->setPen(useCriticalColor ? config->criticalColor() : item->curColor(opt));
 
-    if (staffType && staffType->isGamelanStaff()) {
-        const String text = slendroDegreeText(item->pitch());
-        painter->setFont(gamelanFont(item->magS()));
-        painter->drawText(PointF(gamelanTextOriginX(text, item->magS()), 0.0), text);
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile) {
+        const String text = numericPulseDegreeText(numericProfile, item->pitch());
+        painter->setFont(numericPulseFont(item->magS()));
+        painter->drawText(PointF(numericPulseTextOriginX(text, item->magS()), 0.0), text);
 
         const Chord* chord = item->chord();
-        const int durationMarks = chord && !chord->beam() ? chord->durationType().hooks() : 0;
+        const int durationMarks = numericProfile->durationMarksAbove && chord && !chord->beam()
+                                  ? chord->durationType().hooks() : 0;
         if (durationMarks > 0) {
-            const RectF textBbox = gamelanTextBbox(text, item->magS());
-            const double width = gamelanDurationMarkWidth(textBbox, item->spatium());
-            painter->setPen(Pen(item->curColor(opt), 0.10 * item->spatium(), PenStyle::SolidLine, PenCapStyle::FlatCap));
+            const RectF textBbox = numericPulseTextBbox(text, item->magS());
+            const double width = numericPulseDurationMarkWidth(textBbox, item->spatium());
+            painter->setPen(Pen(item->curColor(opt), numericPulseRhythmMarkThickness(item->spatium()),
+                                PenStyle::SolidLine, PenCapStyle::FlatCap));
             for (int i = 0; i < durationMarks; ++i) {
-                const double y = gamelanDurationMarkY(textBbox, item->spatium(), i);
+                const double y = numericPulseDurationMarkY(textBbox, item->spatium(), i);
                 painter->drawLine(LineF(-width * 0.5, y, width * 0.5, y));
             }
         }
@@ -2594,11 +2599,15 @@ void TDraw::draw(const Rest* item, Painter* painter, const PaintOptions& opt)
 
     painter->setPen(item->curColor(opt));
 
-    const StaffType* staffType = item->staffType();
-    if (staffType && staffType->isGamelanStaff()) {
-        const String text(u".");
-        painter->setFont(gamelanFont(item->magS()));
-        painter->drawText(PointF(gamelanTextOriginX(text, item->magS()), 0.0), text);
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile) {
+        if (numericProfile->showEmptyPulses) {
+            painter->save();
+            painter->setBrush(item->curColor(opt));
+            painter->setNoPen();
+            painter->drawEllipse(numericPulseEmptyPulseBbox(item->spatium()));
+            painter->restore();
+        }
         return;
     }
 
@@ -2875,20 +2884,22 @@ void TDraw::draw(const StaffTypeChange* item, Painter* painter, const PaintOptio
 void TDraw::draw(const Stem* item, Painter* painter, const PaintOptions& opt)
 {
     TRACE_DRAW_ITEM;
-    if (!item->chord()) { // may be need assert?
+    const Chord* chord = item->chord();
+    if (!chord) { // may be need assert?
         return;
     }
 
     // hide if second chord of a cross-measure pair
-    if (item->chord()->crossMeasure() == CrossMeasure::SECOND) {
+    if (chord->crossMeasure() == CrossMeasure::SECOND) {
         return;
     }
 
     const Stem::LayoutData* ldata = item->ldata();
 
     const Staff* staff = item->staff();
-    const StaffType* staffType = staff ? staff->staffTypeForElement(item->chord()) : nullptr;
-    if (staffType && staffType->isGamelanStaff()) {
+    const StaffType* staffType = staff ? staff->staffTypeForElement(chord) : nullptr;
+    const NumericPulseProfile* numericProfile = numericPulseProfile(chord->staff(), chord->tick());
+    if (numericProfile && numericProfile->durationMarksAbove) {
         return;
     }
     const bool isTablature = staffType && staffType->isTabStaff();
@@ -2905,7 +2916,7 @@ void TDraw::draw(const Stem* item, Painter* painter, const PaintOptions& opt)
     bool isUp = item->up();
 
     // slashed half note stem
-    if (item->chord()->durationType().type() == DurationType::V_HALF
+    if (chord->durationType().type() == DurationType::V_HALF
         && staffType->minimStyle() == TablatureMinimStyle::SLASHED) {
         // position slashes onto stem
         double y = isUp ? -item->length() + StemLayout::STAFFTYPE_TAB_SLASH_2STARTY_UP * sp
@@ -3176,8 +3187,17 @@ void TDraw::draw(const TieSegment* item, Painter* painter, const PaintOptions& o
 {
     TRACE_DRAW_ITEM;
 
+    const Tie* tie = item->tie();
+    const Note* startNote = tie ? tie->startNote() : nullptr;
+    if (startNote && numericPulseProfile(startNote->staff(), startNote->tick())) {
+        // Numeric Pulse does not use the Western curved tie glyph. Keep the Tie
+        // object in the score, but leave its future continuation representation
+        // to the numeric rhythm grammar.
+        return;
+    }
+
     // hide tie toward the second chord of a cross-measure value
-    if (item->tie()->endNote() && item->tie()->endNote()->chord()->crossMeasure() == CrossMeasure::SECOND) {
+    if (tie->endNote() && tie->endNote()->chord()->crossMeasure() == CrossMeasure::SECOND) {
         return;
     }
 

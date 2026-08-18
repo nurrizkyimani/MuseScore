@@ -69,7 +69,7 @@
 #include "navigation.h"
 
 #include "log.h"
-#include "dom/gamelannotation.h"
+#include "dom/numericpulseprofile.h"
 
 using namespace muse;
 using namespace mu;
@@ -89,14 +89,14 @@ bool NoteInput::resolveNoteInputParams(const Score* score, int note, bool addFla
     }
 
     const Staff* inputStaff = is.staff();
-    const StaffType* inputStaffType = inputStaff ? inputStaff->staffType(is.tick()) : nullptr;
-    if (inputStaffType && inputStaffType->isGamelanStaff()) {
-        static constexpr int degrees[] = { 1, 2, 3, 0, 5, 6, 0 };
-        if (note < 0 || note >= int(std::size(degrees)) || degrees[note] == 0) {
+    const NumericPulseProfile* numericProfile = numericPulseProfile(inputStaff, is.tick());
+    if (numericProfile) {
+        const NumericPulseDegree* degree = numericProfile->degreeForInputIndex(note);
+        if (!degree) {
             return false;
         }
-        out.gamelanDegree = degrees[note];
-        out.step = *diatonicStepForSlendroDegree(out.gamelanDegree);
+        out.numericDegree = degree->number;
+        out.step = degree->inputStep;
         return true;
     }
 
@@ -553,6 +553,45 @@ Note* NoteInput::addPitch(Transaction& tx, Score* score, NoteVal& nval, bool add
     return note;
 }
 
+//---------------------------------------------------------
+//   addRest
+//---------------------------------------------------------
+
+void NoteInput::addRest(Transaction& tx, Score* score)
+{
+    InputState& is = score->inputState();
+
+    if (is.beyondScore()) {
+        score->appendMeasures(1);
+        is.moveToNextInputPos();
+    }
+
+    if (!is.segment() || is.track() == muse::nidx) {
+        return;
+    }
+
+    score->expandVoice(is.segment(), is.track());
+
+    // The numeric-pulse cursor may sit inside a longer rest without having a
+    // ChordRest at its exact tick. Note entry already repairs this case before
+    // inserting a pitch; empty-pulse entry must do the same.
+    if (!is.cr()) {
+        ChordRest* prevCr = is.segment()->nextChordRest(is.track(), /*backwards*/ true, /*stopAtMeasureBoundary*/ true);
+        if (prevCr && prevCr->endTick() > is.tick()) {
+            const InputState inputStateToRestore = is;
+            truncateChordRest(tx, score, prevCr, is.tick(), /*fillWithRest*/ true);
+            is = inputStateToRestore;
+        }
+    }
+
+    Segment* segment = score->setNoteRest(is.segment(), is.track(), NoteVal(), is.duration().fraction(),
+                                          DirectionV::AUTO, /*forceAccidental*/ false, is.articulationIds());
+    if (segment) {
+        is.moveToNextInputPos();
+    }
+    is.setRest(false);
+}
+
 Note* NoteInput::addPitchToChord(Transaction& tx, Score* score, NoteVal& nval, Chord* chord, InputState* externalInputState,
                                  bool forceAccidental)
 {
@@ -753,16 +792,19 @@ Ret NoteInput::putNote(Transaction& tx, Score* score, const PointF& pos, bool re
 
     Score* posScore = p.segment->score();
     Staff* clickedStaff = posScore->staff(p.staffIdx);
-    const StaffType* clickedStaffType = clickedStaff->staffType(p.segment->tick());
-    if (clickedStaffType && clickedStaffType->isGamelanStaff()) {
+    const NumericPulseProfile* numericProfile = numericPulseProfile(clickedStaff, p.segment->tick());
+    if (numericProfile) {
         InputState& inputState = posScore->inputState();
         inputState.setVoice(0);
 
-        int degree = 1;
+        const NumericPulseDegree* degree = numericProfile->degrees.empty() ? nullptr : &numericProfile->degrees.front();
         if (!inputState.notes().empty()) {
-            degree = slendroDegreeForPitch(inputState.notes().front().pitch).value_or(1);
+            degree = numericProfile->degreeForPitch(inputState.notes().front().pitch);
         }
-        p.line = relStep(*diatonicStepForSlendroDegree(degree), clickedStaff->clef(p.segment->tick()));
+        if (!degree) {
+            return make_ret(Ret::Code::UnknownError);
+        }
+        p.line = relStep(degree->inputStep, clickedStaff->clef(p.segment->tick()));
         return putNote(tx, posScore, p, true);
     }
     // it is not safe to call repitchNote() if p is on a TAB staff
@@ -1260,15 +1302,16 @@ void NoteInput::addPitch(Transaction& tx, Score* score, const NoteInputParams& p
 
     is.setRest(false);
 
-    if (params.gamelanDegree != 0) {
-        const std::optional<int> pitch = pitchForSlendroDegree(params.gamelanDegree);
-        if (!pitch) {
+    if (params.numericDegree != 0) {
+        const NumericPulseProfile* numericProfile = numericPulseProfile(is.staff(), is.tick());
+        const NumericPulseDegree* degree = numericProfile ? numericProfile->degreeForNumber(params.numericDegree) : nullptr;
+        if (!degree) {
             return;
         }
         is.setVoice(0);
-        NoteVal nval = noteVal(score, *pitch, is.staffIdx(), false);
+        NoteVal nval = noteVal(score, degree->scorePitch, is.staffIdx(), false);
         is.setNotes({ nval });
-        addPitch(tx, score, nval, false);
+        addPitch(tx, score, nval, !numericProfile->monophonic && addFlag);
         return;
     }
 

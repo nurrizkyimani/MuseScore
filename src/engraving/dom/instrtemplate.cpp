@@ -253,6 +253,7 @@ void InstrumentTemplate::init(const InstrumentTemplate& t)
     trait = t.trait;
     groupId = t.groupId;
     glissandoStyle = t.glissandoStyle;
+    numericPulseProfile = t.numericPulseProfile;
     barlineSpan = t.barlineSpan;
 
     for (int i = 0; i < MAX_STAVES; ++i) {
@@ -384,6 +385,7 @@ void InstrumentTemplate::write(XmlWriter& xml) const
     }
 
     xml.tag("glissandoStyle", TConv::toXml(glissandoStyle));
+    numericPulseProfile.write(xml);
 
     for (const NamedEventList& a : midiActions) {
         write::TWrite::write(&a, xml, "MidiAction");
@@ -557,6 +559,12 @@ void InstrumentTemplate::read(XmlReader& e)
             }
             if (staffTypePreset) {
                 staffLines[staffIdx] = staffTypePreset->lines();
+            }
+        } else if (tag == "numericPulse") {
+            numericPulseProfile.read(e);
+            if (!numericPulseProfile.isValid()) {
+                LOGW("Ignoring invalid numeric-pulse profile for instrument <%s>", muPrintable(id));
+                numericPulseProfile = {};
             }
         } else if (tag == "init") {
             String val(e.readText());

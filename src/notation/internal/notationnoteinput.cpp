@@ -478,6 +478,22 @@ void NotationNoteInput::addNote(const NoteInputParams& params, NoteAddingMode ad
     m_interaction->showItem(state().cr());
 }
 
+void NotationNoteInput::addRest()
+{
+    TRACEFUNC;
+
+    m_interaction->hideShadowNote();
+
+    startEdit(TranslatableString("undoableAction", "Enter rest"));
+    NoteInput::addRest(score()->transactionManager()->currentOrDummyTransaction(), score());
+    apply();
+
+    notifyAboutStateChanged();
+
+    m_interaction->checkAndShowError();
+    m_interaction->showItem(state().cr());
+}
+
 void NotationNoteInput::applyNoteValueChange(const muse::TranslatableString& actionName,
                                              const std::function<void(mu::engraving::Transaction&)>& change)
 {

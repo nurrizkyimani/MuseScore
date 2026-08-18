@@ -62,6 +62,7 @@ public:
     void setNoteInputMethod(NoteInputMethod method) override;
 
     void addNote(const NoteInputParams& params, NoteAddingMode addingMode) override;
+    void addRest() override;
     void setDuration(DurationType duration) override;
     void toggleRest() override;
     void toggleDots(int dots) override;

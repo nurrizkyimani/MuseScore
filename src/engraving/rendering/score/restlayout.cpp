@@ -21,7 +21,8 @@
  */
 
 #include "restlayout.h"
-#include "gamelanrendering.h"
+#include "numericpulserendering.h"
+#include "dom/numericpulseprofile.h"
 
 #include "beamlayout.h"
 #include "chordlayout.h"
@@ -82,10 +83,15 @@ void RestLayout::layoutRest(const Rest* item, Rest::LayoutData* ldata, const Lay
 
     ldata->setPosX(0.0);
     const StaffType* stt = item->staffType();
-    if (stt && stt->isGamelanStaff()) {
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile) {
         ldata->sym = SymId::noSym;
         ldata->setPosY(0.0);
-        ldata->setBbox(gamelanTextBbox(String(u"."), item->magS()));
+        ldata->setBbox(numericProfile->showEmptyPulses
+                       ? numericPulseEmptyPulseBbox(item->spatium()) : RectF());
+        if (!item->shouldNotBeDrawn()) {
+            fillShape(item, ldata, ctx.conf());
+        }
         return;
     }
     if (stt && stt->isTabStaff()) {
@@ -663,7 +669,11 @@ void RestLayout::fillShape(const Rest* item, Rest::LayoutData* ldata)
 
     if ((!item->isGap() || item->debugDrawGap()) && !item->shouldNotBeDrawn()) {
         shape.add(ChordLayout::chordRestShape(item));
-        shape.add(item->symBbox(ldata->sym), item);
+        if (numericPulseProfile(item->staff(), item->tick())) {
+            shape.add(ldata->bbox(), item);
+        } else {
+            shape.add(item->symBbox(ldata->sym), item);
+        }
         for (const NoteDot* dot : item->dotList()) {
             if (dot->addToSkyline()) {
                 shape.add(item->symBbox(SymId::augmentationDot).translated(dot->pos()), dot);

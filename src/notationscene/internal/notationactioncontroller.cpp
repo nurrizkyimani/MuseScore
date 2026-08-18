@@ -34,6 +34,7 @@
 #include "engraving/dom/text.h"
 #include "engraving/dom/sig.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/numericpulseprofile.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/editing/noteinput.h"
 
@@ -1078,6 +1079,15 @@ void NotationActionController::handleNoteAction(const NoteInputParams& params, c
 
     startNoteInput();
 
+    const NoteInputState& inputState = noteInput->state();
+    const engraving::NumericPulseProfile* numericProfile
+        = engraving::numericPulseProfile(inputState.staff(), inputState.tick());
+    if (numericProfile && !noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+        // Numeric degrees are direct note events. BY_DURATION would only prime
+        // the first degree and wait for a duration button before inserting it.
+        noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+    }
+
     if (addingMode == NoteAddingMode::NextChord) {
         if (noteInput->usingNoteInputMethod(NoteInputMethod::BY_DURATION)) {
             noteInput->setRestMode(false);
@@ -1723,11 +1733,12 @@ muse::Ret NotationActionController::moveWithRet(MoveDirection direction, bool qu
     bool playChord = false;
 
     if ((direction == MoveDirection::Up || direction == MoveDirection::Down)) {
-        const engraving::StaffType* selectedStaffType = selectedElement ? selectedElement->staffType() : nullptr;
         const engraving::Staff* inputStaff = state.staff();
-        const engraving::StaffType* inputStaffType = inputStaff ? inputStaff->staffType(state.tick()) : nullptr;
-        if ((selectedStaffType && selectedStaffType->isGamelanStaff())
-            || (inputStaffType && inputStaffType->isGamelanStaff())) {
+        const engraving::NumericPulseProfile* selectedProfile = selectedElement
+                                                                ? engraving::numericPulseProfile(selectedElement->staff(), selectedElement->tick())
+                                                                : nullptr;
+        const engraving::NumericPulseProfile* inputProfile = engraving::numericPulseProfile(inputStaff, state.tick());
+        if ((selectedProfile && selectedProfile->fixedBaseline) || (inputProfile && inputProfile->fixedBaseline)) {
             return muse::make_ok();
         }
     }
@@ -1847,11 +1858,12 @@ void NotationActionController::movePitchDiatonic(MoveDirection direction, bool)
 
     INotationNoteInputPtr noteInput = interaction->noteInput();
     const engraving::Staff* inputStaff = noteInput->state().staff();
-    const engraving::StaffType* inputStaffType = inputStaff ? inputStaff->staffType(noteInput->state().tick()) : nullptr;
     const engraving::EngravingItem* selectedElement = interaction->selection()->element();
-    const engraving::StaffType* selectedStaffType = selectedElement ? selectedElement->staffType() : nullptr;
-    if ((inputStaffType && inputStaffType->isGamelanStaff())
-        || (selectedStaffType && selectedStaffType->isGamelanStaff())) {
+    const engraving::NumericPulseProfile* inputProfile = engraving::numericPulseProfile(inputStaff, noteInput->state().tick());
+    const engraving::NumericPulseProfile* selectedProfile = selectedElement
+                                                            ? engraving::numericPulseProfile(selectedElement->staff(), selectedElement->tick())
+                                                            : nullptr;
+    if ((inputProfile && inputProfile->fixedBaseline) || (selectedProfile && selectedProfile->fixedBaseline)) {
         return;
     }
     if (noteInput->isNoteInputMode() && noteInput->usingNoteInputMethod(NoteInputMethod::BY_DURATION)) {

@@ -120,7 +120,7 @@ struct TablatureDurationFont {
 
 enum class StaffTypes : signed char {
     STANDARD,
-    GAMELAN_SLENDRO,
+    NUMERIC_PULSE,
     PERC_1LINE, PERC_2LINE, PERC_3LINE, PERC_5LINE,
     TAB_6SIMPLE, TAB_6COMMON, TAB_6FULL,
     TAB_4SIMPLE, TAB_4COMMON, TAB_4FULL,
@@ -306,7 +306,7 @@ public:
 
     bool isTabStaff() const { return m_group == StaffGroup::TAB; }
     bool isDrumStaff() const { return m_group == StaffGroup::PERCUSSION; }
-    bool isGamelanStaff() const { return m_xmlName == u"stdGamelanSlendro"; }
+    bool isNumericPulseStaff() const { return m_xmlName == u"stdNumericPulse"; }
 
     bool isSimpleTabStaff() const;
     bool isCommonTabStaff() const;

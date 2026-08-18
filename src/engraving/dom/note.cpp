@@ -61,6 +61,7 @@
 #include "measure.h"
 #include "notedot.h"
 #include "noteline.h"
+#include "numericpulseprofile.h"
 #include "parenthesis.h"
 #include "part.h"
 #include "partialtie.h"
@@ -1101,7 +1102,7 @@ double Note::bboxRightPos() const
 double Note::headBodyWidth() const
 {
     const StaffType* st = staffType();
-    if (st && st->isGamelanStaff()) {
+    if (numericPulseProfile(staff(), tick())) {
         return headWidth();
     }
     if (st && st->isTabStaff()) {
@@ -1204,7 +1205,7 @@ void Note::updateHeadGroup(const NoteHeadGroup headGroup)
 double Note::headWidth() const
 {
     const StaffType* staffType = staff() ? staff()->staffTypeForElement(this) : nullptr;
-    if (staffType && staffType->isGamelanStaff() && ldata()) {
+    if (numericPulseProfile(staff(), tick()) && ldata()) {
         return ldata()->bbox().width();
     }
     return symWidth(noteHead());
@@ -1229,7 +1230,7 @@ double Note::bboxXShift() const
 double Note::noteheadCenterX() const
 {
     const StaffType* staffType = staff() ? staff()->staffTypeForElement(this) : nullptr;
-    if (staffType && staffType->isGamelanStaff() && ldata()) {
+    if (numericPulseProfile(staff(), tick()) && ldata()) {
         return ldata()->bbox().center().x();
     }
     return score()->engravingFont()->width(noteHead(), magS()) / 2 + bboxXShift();
@@ -1262,7 +1263,7 @@ double Note::tabHeadWidth(const StaffType* tab) const
 double Note::headHeight() const
 {
     const StaffType* staffType = staff() ? staff()->staffTypeForElement(this) : nullptr;
-    if (staffType && staffType->isGamelanStaff() && ldata()) {
+    if (numericPulseProfile(staff(), tick()) && ldata()) {
         return ldata()->bbox().height();
     }
     return symHeight(noteHead());

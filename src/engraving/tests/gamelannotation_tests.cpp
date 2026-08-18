@@ -8,12 +8,14 @@
 #include <array>
 
 #include "engraving/dom/beam.h"
-#include "engraving/dom/gamelannotation.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/input.h"
+#include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/numericpulseprofile.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
@@ -22,6 +24,7 @@
 #include "engraving/editing/edittie.h"
 #include "engraving/editing/noteinput.h"
 #include "engraving/editing/transaction/transaction.h"
+#include "engraving/rendering/score/numericpulserendering.h"
 
 #include "utils/scorerw.h"
 
@@ -29,20 +32,21 @@ using namespace mu::engraving;
 
 namespace {
 
-MasterScore* makeGamelanScore()
+MasterScore* makeNumericPulseScore(const String& instrumentId = u"saron-pelog")
 {
     MasterScore* score = ScoreRW::readScore(u"durationtype_data/empty.mscx");
     if (!score) {
         return nullptr;
     }
 
-    const StaffType* staffType = StaffType::preset(StaffTypes::GAMELAN_SLENDRO);
+    const StaffType* staffType = StaffType::preset(StaffTypes::NUMERIC_PULSE);
     if (!staffType) {
         delete score;
         return nullptr;
     }
 
     score->staff(0)->setStaffType(Fraction(0, 1), *staffType);
+    score->staff(0)->part()->instrument()->setId(instrumentId);
     InputState& inputState = score->inputState();
     inputState.setTrack(0);
     inputState.setSegment(score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest));
@@ -54,49 +58,66 @@ MasterScore* makeGamelanScore()
 void enterDegree(MasterScore* score, int degree)
 {
     NoteInputParams params;
-    params.gamelanDegree = degree;
-    score->transactionManager()->transaction(TranslatableString::untranslatable("Enter Slendro pulse"), [&](Transaction& tx) {
+    params.numericDegree = degree;
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Enter numeric pulse"), [&](Transaction& tx) {
         NoteInput::addPitch(tx, score, params, true, false);
     });
 }
 
 }
 
-TEST(Engraving_GamelanNotationTests, SlendroDegreePitchMapping)
+TEST(Engraving_GamelanNotationTests, PelogProfileDefinesSevenNumericDegrees)
 {
+    const InstrumentTemplate* instrumentTemplate = searchTemplate(u"saron-pelog");
+    ASSERT_NE(instrumentTemplate, nullptr);
+    const NumericPulseProfile& profile = instrumentTemplate->numericPulseProfile;
+    ASSERT_TRUE(profile.isValid());
+
     const std::pair<int, int> mapping[] = {
-        { 1, 60 }, { 2, 62 }, { 3, 64 }, { 5, 67 }, { 6, 69 }
+        { 1, 60 }, { 2, 62 }, { 3, 64 }, { 4, 65 }, { 5, 67 }, { 6, 69 }, { 7, 71 }
     };
 
     for (const auto& [degree, pitch] : mapping) {
-        ASSERT_TRUE(pitchForSlendroDegree(degree).has_value());
-        EXPECT_EQ(*pitchForSlendroDegree(degree), pitch);
-        ASSERT_TRUE(slendroDegreeForPitch(pitch).has_value());
-        EXPECT_EQ(*slendroDegreeForPitch(pitch), degree);
-        EXPECT_EQ(slendroDegreeText(pitch), muse::String::number(degree));
+        ASSERT_NE(profile.degreeForNumber(degree), nullptr);
+        EXPECT_EQ(profile.degreeForNumber(degree)->scorePitch, pitch);
+        ASSERT_NE(profile.degreeForPitch(pitch), nullptr);
+        EXPECT_EQ(profile.degreeForPitch(pitch)->number, degree);
+        EXPECT_EQ(numericPulseDegreeText(&profile, pitch), muse::String::number(degree));
     }
-
-    EXPECT_FALSE(pitchForSlendroDegree(4).has_value());
-    EXPECT_FALSE(pitchForSlendroDegree(7).has_value());
-    EXPECT_FALSE(slendroDegreeForPitch(65).has_value());
-    EXPECT_EQ(slendroDegreeText(65), muse::String(u"×"));
 }
 
-TEST(Engraving_GamelanNotationTests, SlendroInputSteps)
+TEST(Engraving_GamelanNotationTests, SlendroProfileRemainsAvailableForCompatibility)
 {
-    EXPECT_EQ(diatonicStepForSlendroDegree(1), 28);
-    EXPECT_EQ(diatonicStepForSlendroDegree(2), 29);
-    EXPECT_EQ(diatonicStepForSlendroDegree(3), 30);
-    EXPECT_EQ(diatonicStepForSlendroDegree(5), 32);
-    EXPECT_EQ(diatonicStepForSlendroDegree(6), 33);
-    EXPECT_FALSE(diatonicStepForSlendroDegree(4).has_value());
+    const InstrumentTemplate* instrumentTemplate = searchTemplate(u"saron-slendro");
+    ASSERT_NE(instrumentTemplate, nullptr);
+    const NumericPulseProfile& profile = instrumentTemplate->numericPulseProfile;
+    ASSERT_TRUE(profile.isValid());
+    EXPECT_EQ(profile.degrees.size(), 5u);
+    EXPECT_EQ(profile.degreeForNumber(1)->inputStep, 28);
+    EXPECT_EQ(profile.degreeForNumber(2)->inputStep, 29);
+    EXPECT_EQ(profile.degreeForNumber(3)->inputStep, 30);
+    EXPECT_EQ(profile.degreeForNumber(5)->inputStep, 32);
+    EXPECT_EQ(profile.degreeForNumber(6)->inputStep, 33);
+    EXPECT_EQ(profile.degreeForNumber(4), nullptr);
+    EXPECT_EQ(profile.degreeForNumber(7), nullptr);
 }
 
-TEST(Engraving_GamelanNotationTests, SlendroStaffPreset)
+TEST(Engraving_GamelanNotationTests, NumericPulseProfileRejectsDuplicateDegreeDefinitions)
 {
-    const StaffType* staffType = StaffType::preset(StaffTypes::GAMELAN_SLENDRO);
+    NumericPulseProfile profile;
+    profile.id = u"invalid-duplicate";
+    profile.degrees = {
+        { 1, 60, 28, 0, u"1", u"note-c" },
+        { 1, 62, 29, 1, u"1", u"note-d" }
+    };
+    EXPECT_FALSE(profile.isValid());
+}
+
+TEST(Engraving_GamelanNotationTests, NumericPulseStaffPreset)
+{
+    const StaffType* staffType = StaffType::preset(StaffTypes::NUMERIC_PULSE);
     ASSERT_NE(staffType, nullptr);
-    EXPECT_TRUE(staffType->isGamelanStaff());
+    EXPECT_TRUE(staffType->isNumericPulseStaff());
     EXPECT_EQ(staffType->group(), StaffGroup::STANDARD);
     EXPECT_EQ(staffType->lines(), 1);
     EXPECT_TRUE(staffType->showBarlines());
@@ -106,9 +127,39 @@ TEST(Engraving_GamelanNotationTests, SlendroStaffPreset)
     EXPECT_FALSE(staffType->showLedgerLines());
 }
 
+TEST(Engraving_GamelanNotationTests, LegacySlendroStaffPresetNameResolvesToNumericPulse)
+{
+    const StaffType* numericPulse = StaffType::preset(StaffTypes::NUMERIC_PULSE);
+    ASSERT_NE(numericPulse, nullptr);
+    EXPECT_EQ(StaffType::presetFromXmlName(u"stdGamelanSlendro"), numericPulse);
+}
+
+TEST(Engraving_GamelanNotationTests, WesternInstrumentHasNoNumericPulseProfile)
+{
+    MasterScore* score = ScoreRW::readScore(u"durationtype_data/empty.mscx");
+    ASSERT_NE(score, nullptr);
+    EXPECT_EQ(numericPulseProfile(score->staff(0), Fraction(0, 1)), nullptr);
+    EXPECT_FALSE(score->staff(0)->staffType(Fraction(0, 1))->isNumericPulseStaff());
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, PelogAcceptsAllSevenDegreeInputs)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+
+    for (int inputIndex = 0; inputIndex < 7; ++inputIndex) {
+        NoteInputParams params;
+        EXPECT_TRUE(NoteInput::resolveNoteInputParams(score, inputIndex, false, params));
+        EXPECT_EQ(params.numericDegree, inputIndex + 1);
+    }
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, PulseInputIsMonophonicAndDoesNotStack)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
 
     InputState& inputState = score->inputState();
@@ -130,16 +181,80 @@ TEST(Engraving_GamelanNotationTests, PulseInputIsMonophonicAndDoesNotStack)
     delete score;
 }
 
+TEST(Engraving_GamelanNotationTests, EmptyPulseCreatesExplicitRestAndAdvancesCursor)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+
+    enterDegree(score, 4);
+    ASSERT_EQ(score->inputState().tick(), Fraction(1, 4));
+
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Enter empty pulse"), [&](Transaction& tx) {
+        NoteInput::addRest(tx, score);
+    });
+
+    Segment* segment = score->tick2segment(Fraction(1, 4), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    EngravingItem* item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isRest());
+    const Rest* rest = toRest(item);
+    EXPECT_FALSE(rest->generated());
+    EXPECT_FALSE(rest->isGap());
+    EXPECT_EQ(rest->durationType().type(), DurationType::V_QUARTER);
+    EXPECT_EQ(score->inputState().tick(), Fraction(1, 2));
+
+    score->setLayoutAll();
+    score->doLayout();
+    const muse::RectF expectedBbox = rendering::score::numericPulseEmptyPulseBbox(rest->spatium());
+    EXPECT_DOUBLE_EQ(rest->ldata()->bbox().x(), expectedBbox.x());
+    EXPECT_DOUBLE_EQ(rest->ldata()->bbox().y(), expectedBbox.y());
+    EXPECT_DOUBLE_EQ(rest->ldata()->bbox().width(), expectedBbox.width());
+    EXPECT_DOUBLE_EQ(rest->ldata()->bbox().height(), expectedBbox.height());
+    EXPECT_LT(rest->ldata()->bbox().bottom(), 0.0);
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, EmptyPulseCanSplitLongerExistingRest)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+
+    // Reproduce the toolbar cursor shown in the bug report: it is positioned
+    // inside the initial full-measure rest, so no ChordRest exists at this tick.
+    InputState& inputState = score->inputState();
+    Segment* cursorSegment = score->firstMeasure()->getSegment(SegmentType::ChordRest, Fraction(1, 4));
+    ASSERT_NE(cursorSegment, nullptr);
+    inputState.setSegment(cursorSegment);
+    ASSERT_EQ(inputState.cr(), nullptr);
+
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Enter empty pulse inside rest"),
+                                              [&](Transaction& tx) { NoteInput::addRest(tx, score); });
+
+    Segment* segment = score->tick2segment(Fraction(1, 4), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    EngravingItem* item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isRest());
+    EXPECT_FALSE(toRest(item)->generated());
+    EXPECT_FALSE(toRest(item)->isGap());
+    EXPECT_EQ(toRest(item)->durationType().type(), DurationType::V_QUARTER);
+    EXPECT_EQ(score->inputState().tick(), Fraction(1, 2));
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, RejectsUnsupportedInputDegrees)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore(u"saron-slendro");
     ASSERT_NE(score, nullptr);
 
     const std::array<int, 5> supportedSteps { 0, 1, 2, 4, 5 };
     for (int step : supportedSteps) {
         NoteInputParams params;
         EXPECT_TRUE(NoteInput::resolveNoteInputParams(score, step, false, params));
-        EXPECT_NE(params.gamelanDegree, 0);
+        EXPECT_NE(params.numericDegree, 0);
     }
 
     NoteInputParams params;
@@ -150,7 +265,7 @@ TEST(Engraving_GamelanNotationTests, RejectsUnsupportedInputDegrees)
 
 TEST(Engraving_GamelanNotationTests, EighthPulseGroupStaysFlatAndMonophonic)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     score->inputState().setDuration(DurationType::V_EIGHTH);
 
@@ -180,6 +295,10 @@ TEST(Engraving_GamelanNotationTests, EighthPulseGroupStaysFlatAndMonophonic)
     ASSERT_NE(beam, nullptr);
     EXPECT_TRUE(beam->up());
     EXPECT_DOUBLE_EQ(beam->slope(), 0.0);
+    EXPECT_DOUBLE_EQ(beam->beamWidth(),
+                     rendering::score::numericPulseRhythmMarkThickness(beam->spatium()) * beam->mag());
+    EXPECT_DOUBLE_EQ(beam->beamDist(),
+                     rendering::score::numericPulseRhythmMarkDistance(beam->spatium()) * beam->mag());
 
     const double baseline = score->firstMeasure()->findChord(ticks.front(), 0)->upNote()->ldata()->pos().y();
     for (const Fraction& tick : ticks) {
@@ -190,7 +309,7 @@ TEST(Engraving_GamelanNotationTests, EighthPulseGroupStaysFlatAndMonophonic)
 
 TEST(Engraving_GamelanNotationTests, SixteenthPulseGroupUsesTwoFlatRhythmMarks)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     score->inputState().setDuration(DurationType::V_16TH);
 
@@ -217,7 +336,7 @@ TEST(Engraving_GamelanNotationTests, SixteenthPulseGroupUsesTwoFlatRhythmMarks)
 
 TEST(Engraving_GamelanNotationTests, DeletePulseUndoRedoDoesNotShiftNeighbors)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     enterDegree(score, 1);
     enterDegree(score, 2);
@@ -260,7 +379,7 @@ TEST(Engraving_GamelanNotationTests, DeletePulseUndoRedoDoesNotShiftNeighbors)
 
 TEST(Engraving_GamelanNotationTests, NativeTieProvidesContinuation)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     enterDegree(score, 3);
 
@@ -279,18 +398,20 @@ TEST(Engraving_GamelanNotationTests, NativeTieProvidesContinuation)
 
 TEST(Engraving_GamelanNotationTests, SaveReloadPreservesStaffAndPulseData)
 {
-    MasterScore* score = makeGamelanScore();
+    MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     enterDegree(score, 6);
     score->inputState().setDuration(DurationType::V_EIGHTH);
     enterDegree(score, 5);
 
-    const String savePath = u"gamelan-roundtrip.mscx";
+    const String savePath = u"numeric-pulse-roundtrip.mscx";
     ASSERT_TRUE(ScoreRW::saveScore(score, savePath));
     MasterScore* reopened = ScoreRW::readScore(savePath, true);
     ASSERT_NE(reopened, nullptr);
 
-    EXPECT_TRUE(reopened->staff(0)->staffType(Fraction(0, 1))->isGamelanStaff());
+    EXPECT_TRUE(reopened->staff(0)->staffType(Fraction(0, 1))->isNumericPulseStaff());
+    ASSERT_NE(numericPulseProfile(reopened->staff(0), Fraction(0, 1)), nullptr);
+    EXPECT_EQ(numericPulseProfile(reopened->staff(0), Fraction(0, 1))->id, muse::String(u"saron-pelog"));
     Chord* firstChord = reopened->firstMeasure()->findChord(Fraction(0, 1), 0);
     Chord* secondChord = reopened->firstMeasure()->findChord(Fraction(1, 4), 0);
     ASSERT_NE(firstChord, nullptr);

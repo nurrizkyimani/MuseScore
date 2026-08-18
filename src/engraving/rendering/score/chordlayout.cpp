@@ -48,6 +48,7 @@
 #include "dom/segment.h"
 #include "dom/slur.h"
 #include "dom/staff.h"
+#include "dom/numericpulseprofile.h"
 #include "dom/stem.h"
 #include "dom/stemslash.h"
 #include "dom/system.h"
@@ -1285,8 +1286,7 @@ bool ChordLayout::computeUpBeamCase(const Chord* item, Beam* beam)
 
 void ChordLayout::updateLedgerLines(Chord* item, LayoutContext& ctx)
 {
-    const StaffType* itemStaffType = item->staff() ? item->staff()->staffTypeForElement(item) : nullptr;
-    if (itemStaffType && itemStaffType->isGamelanStaff()) {
+    if (numericPulseProfile(item->staff(), item->tick())) {
         muse::DeleteAll(item->ledgerLines());
         item->ledgerLines().clear();
         return;
@@ -1548,7 +1548,8 @@ void ChordLayout::computeUp(const Chord* item, Chord::LayoutData* ldata, const L
     const bool hasBeam = item->beam() && item->beam()->elements().size() > 1;
 
     const StaffType* tab = item->staff() ? item->staff()->staffTypeForElement(item) : 0;
-    if (tab && tab->isGamelanStaff()) {
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile && numericProfile->durationMarksAbove) {
         ldata->up = true;
         return;
     }
@@ -2826,8 +2827,8 @@ void ChordLayout::layoutChords3(const std::vector<Chord*>& chords,
                 noteX = chord->noteHeadWidth() - note->headBodyWidth();
             }
 
-            const StaffType* noteStaffType = note->staff() ? note->staff()->staffTypeForElement(note) : nullptr;
-            double ny = noteStaffType && noteStaffType->isGamelanStaff()
+            const NumericPulseProfile* numericProfile = numericPulseProfile(note->staff(), note->tick());
+            double ny = numericProfile && numericProfile->fixedBaseline
                         ? 0.0 : (note->line() + stepOffset) * stepDistance;
             if (note->ldata()->pos().y() != ny) {
                 note->mutldata()->setPosY(ny);

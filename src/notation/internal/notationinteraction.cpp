@@ -86,6 +86,7 @@
 #include "engraving/dom/slur.h"
 #include "engraving/dom/soundflag.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/numericpulseprofile.h"
 #include "engraving/dom/stafflines.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/dom/stafftypechange.h"
@@ -462,8 +463,8 @@ void NotationInteraction::showShadowNoteForPosition(const PointF& pos)
     }
 
     const Staff* staff = score()->staff(params.position.staffIdx);
-    const StaffType* staffType = staff ? staff->staffType(params.position.segment->tick()) : nullptr;
-    if (staffType && staffType->isGamelanStaff()) {
+    const NumericPulseProfile* numericProfile = numericPulseProfile(staff, params.position.segment->tick());
+    if (numericProfile && numericProfile->fixedBaseline) {
         shadowNote.setVisible(false);
         m_shadowNoteChanged.send(/*visible*/ false);
         return;
@@ -5458,6 +5459,17 @@ void NotationInteraction::putRestToSelection()
 
     if (!m_noteInput->isNoteInputMode()) {
         m_noteInput->startNoteInput(configuration()->defaultNoteInputMethod());
+    }
+
+    const NumericPulseProfile* numericProfile = numericPulseProfile(is.staff(), is.tick());
+    if (numericProfile) {
+        if (!m_noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+            m_noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+        }
+        // Numeric-pulse empty rests use the same cursor-repair path as pitch
+        // entry, including positions inside a longer existing rest.
+        m_noteInput->addRest();
+        return;
     }
 
     if (is.usingNoteEntryMethod(NoteEntryMethod::BY_DURATION) || is.usingNoteEntryMethod(NoteEntryMethod::RHYTHM)) {
