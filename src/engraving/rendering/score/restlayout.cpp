@@ -21,6 +21,7 @@
  */
 
 #include "restlayout.h"
+#include "gamelanrendering.h"
 
 #include "beamlayout.h"
 #include "chordlayout.h"
@@ -81,6 +82,12 @@ void RestLayout::layoutRest(const Rest* item, Rest::LayoutData* ldata, const Lay
 
     ldata->setPosX(0.0);
     const StaffType* stt = item->staffType();
+    if (stt && stt->isGamelanStaff()) {
+        ldata->sym = SymId::noSym;
+        ldata->setPosY(0.0);
+        ldata->setBbox(gamelanTextBbox(String(u"."), item->magS()));
+        return;
+    }
     if (stt && stt->isTabStaff()) {
         // if rests are shown and note values are shown as duration symbols
         if (stt->showRests() && stt->genDurations()) {

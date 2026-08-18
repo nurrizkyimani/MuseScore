@@ -69,6 +69,7 @@
 #include "navigation.h"
 
 #include "log.h"
+#include "dom/gamelannotation.h"
 
 using namespace muse;
 using namespace mu;
@@ -85,6 +86,18 @@ bool NoteInput::resolveNoteInputParams(const Score* score, int note, bool addFla
     //! NOTE: Drumset params should be defined explicitly (see NotationViewInputController::tryPercussionShortcut)
     if (!is.isValid() || is.drumset()) {
         return false;
+    }
+
+    const Staff* inputStaff = is.staff();
+    const StaffType* inputStaffType = inputStaff ? inputStaff->staffType(is.tick()) : nullptr;
+    if (inputStaffType && inputStaffType->isGamelanStaff()) {
+        static constexpr int degrees[] = { 1, 2, 3, 0, 5, 6, 0 };
+        if (note < 0 || note >= int(std::size(degrees)) || degrees[note] == 0) {
+            return false;
+        }
+        out.gamelanDegree = degrees[note];
+        out.step = *diatonicStepForSlendroDegree(out.gamelanDegree);
+        return true;
     }
 
     int octave = 4;
@@ -739,6 +752,19 @@ Ret NoteInput::putNote(Transaction& tx, Score* score, const PointF& pos, bool re
     }
 
     Score* posScore = p.segment->score();
+    Staff* clickedStaff = posScore->staff(p.staffIdx);
+    const StaffType* clickedStaffType = clickedStaff->staffType(p.segment->tick());
+    if (clickedStaffType && clickedStaffType->isGamelanStaff()) {
+        InputState& inputState = posScore->inputState();
+        inputState.setVoice(0);
+
+        int degree = 1;
+        if (!inputState.notes().empty()) {
+            degree = slendroDegreeForPitch(inputState.notes().front().pitch).value_or(1);
+        }
+        p.line = relStep(*diatonicStepForSlendroDegree(degree), clickedStaff->clef(p.segment->tick()));
+        return putNote(tx, posScore, p, true);
+    }
     // it is not safe to call repitchNote() if p is on a TAB staff
     bool isTablature = posScore->staff(p.staffIdx)->isTabStaff(p.segment->tick());
 
@@ -1233,6 +1259,18 @@ void NoteInput::addPitch(Transaction& tx, Score* score, const NoteInputParams& p
     }
 
     is.setRest(false);
+
+    if (params.gamelanDegree != 0) {
+        const std::optional<int> pitch = pitchForSlendroDegree(params.gamelanDegree);
+        if (!pitch) {
+            return;
+        }
+        is.setVoice(0);
+        NoteVal nval = noteVal(score, *pitch, is.staffIdx(), false);
+        is.setNotes({ nval });
+        addPitch(tx, score, nval, false);
+        return;
+    }
 
     const Drumset* ds = is.drumset();
     if (ds) {

@@ -51,6 +51,7 @@ enum class SymId;
 struct NoteInputParams {
     int step = 0;
     int drumPitch = -1;
+    int gamelanDegree = 0;
 };
 
 class NoteInput

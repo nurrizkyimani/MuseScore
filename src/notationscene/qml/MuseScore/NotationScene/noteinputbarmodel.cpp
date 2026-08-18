@@ -33,6 +33,8 @@
 
 #include "internal/notationuiactions.h"
 #include "notationcommands.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/stafftype.h"
 
 using namespace mu;
 using namespace mu::notation;
@@ -86,13 +88,34 @@ void NoteInputBarModel::init()
 {
     subscribeOnChanges();
 
+    const auto listenToNoteInputState = [this]() {
+        m_noteInputStateReceiver = std::make_unique<muse::async::Asyncable>();
+        INotationPtr notation = context()->currentNotation();
+        if (!notation || !notation->noteInput()) {
+            return;
+        }
+        notation->noteInput()->stateChanged().onNotify(m_noteInputStateReceiver.get(), [this]() {
+            load();
+            emit isGamelanStaffChanged();
+        });
+    };
+
     uiState()->toolConfigChanged(TOOLBAR_NAME).onNotify(this, [this]() {
         load();
     });
 
     commandsController()->isNoteInputAllowedChanged().onReceive(this, [this](bool) {
         emit isInputAllowedChanged();
+        load();
     });
+
+    context()->currentNotationChanged().onNotify(this, [this]() {
+        load();
+        emit isGamelanStaffChanged();
+    });
+
+    context()->currentNotationChanged().onNotify(this, listenToNoteInputState);
+    listenToNoteInputState();
 
     load();
 }
@@ -100,6 +123,19 @@ void NoteInputBarModel::init()
 void NoteInputBarModel::load()
 {
     MenuItemList items;
+
+    if (isGamelanStaff()) {
+        static const std::pair<ActionCode, const char*> gamelanActions[] = {
+            { "note-c", "1" }, { "note-d", "2" }, { "note-e", "3" },
+            { "note-g", "5" }, { "note-a", "6" }
+        };
+        for (const auto& [code, degree] : gamelanActions) {
+            UiAction action = uiActionsRegister()->action(code);
+            action.title = TranslatableString::untranslatable(degree);
+            action.iconCode = IconCode::Code::NONE;
+            items << makeActionItem(action, QStringLiteral("0"));
+        }
+    }
 
     ToolConfig noteInputConfig = uiState()->toolConfig(TOOLBAR_NAME, NotationUiActions::defaultNoteInputBarConfig());
 
@@ -132,6 +168,19 @@ void NoteInputBarModel::load()
 bool NoteInputBarModel::isInputAllowed() const
 {
     return commandsController()->isNoteInputAllowed();
+}
+
+bool NoteInputBarModel::isGamelanStaff() const
+{
+    INotationPtr notation = context()->currentNotation();
+    if (!notation || !notation->noteInput()) {
+        return false;
+    }
+
+    const NoteInputState& state = notation->noteInput()->state();
+    const engraving::Staff* staff = state.staff();
+    const engraving::StaffType* staffType = staff ? staff->staffType(state.tick()) : nullptr;
+    return staffType && staffType->isGamelanStaff();
 }
 
 MenuItem* NoteInputBarModel::makeActionItem(const UiAction& action, const QString& section,

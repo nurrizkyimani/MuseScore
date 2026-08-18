@@ -33,6 +33,8 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/sig.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/stafftype.h"
 #include "engraving/editing/noteinput.h"
 
 #include "notation/inotationautomation.h" // IWYU pragma: keep
@@ -1720,6 +1722,16 @@ muse::Ret NotationActionController::moveWithRet(MoveDirection direction, bool qu
     INotationNoteInputPtr noteInput = interaction->noteInput();
     bool playChord = false;
 
+    if ((direction == MoveDirection::Up || direction == MoveDirection::Down)) {
+        const engraving::StaffType* selectedStaffType = selectedElement ? selectedElement->staffType() : nullptr;
+        const engraving::Staff* inputStaff = state.staff();
+        const engraving::StaffType* inputStaffType = inputStaff ? inputStaff->staffType(state.tick()) : nullptr;
+        if ((selectedStaffType && selectedStaffType->isGamelanStaff())
+            || (inputStaffType && inputStaffType->isGamelanStaff())) {
+            return muse::make_ok();
+        }
+    }
+
     switch (direction) {
     case MoveDirection::Up:
     case MoveDirection::Down:
@@ -1834,6 +1846,14 @@ void NotationActionController::movePitchDiatonic(MoveDirection direction, bool)
     }
 
     INotationNoteInputPtr noteInput = interaction->noteInput();
+    const engraving::Staff* inputStaff = noteInput->state().staff();
+    const engraving::StaffType* inputStaffType = inputStaff ? inputStaff->staffType(noteInput->state().tick()) : nullptr;
+    const engraving::EngravingItem* selectedElement = interaction->selection()->element();
+    const engraving::StaffType* selectedStaffType = selectedElement ? selectedElement->staffType() : nullptr;
+    if ((inputStaffType && inputStaffType->isGamelanStaff())
+        || (selectedStaffType && selectedStaffType->isGamelanStaff())) {
+        return;
+    }
     if (noteInput->isNoteInputMode() && noteInput->usingNoteInputMethod(NoteInputMethod::BY_DURATION)) {
         moveInputNotes(direction == MoveDirection::Up, PitchMode::DIATONIC);
         return;

@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "tdraw.h"
+#include "gamelanrendering.h"
 
 #include "defer.h"
 
@@ -61,6 +62,7 @@
 #include "dom/fret.h"
 
 #include "dom/glissando.h"
+#include "dom/gamelannotation.h"
 #include "dom/gradualtempochange.h"
 #include "dom/guitarbend.h"
 
@@ -2343,6 +2345,13 @@ void TDraw::draw(const Note* item, Painter* painter, const PaintOptions& opt)
 
     painter->setPen(useCriticalColor ? config->criticalColor() : item->curColor(opt));
 
+    if (staffType && staffType->isGamelanStaff()) {
+        const String text = slendroDegreeText(item->pitch());
+        painter->setFont(gamelanFont(item->magS()));
+        painter->drawText(PointF(gamelanTextOriginX(text, item->magS()), 0.0), text);
+        return;
+    }
+
     // tablature
     if (isTabStaff) {
         if (item->displayFret() == Note::DisplayFretOption::Hide || item->shouldHideFret()) {
@@ -2566,6 +2575,14 @@ void TDraw::draw(const Rest* item, Painter* painter, const PaintOptions& opt)
     const Rest::LayoutData* ldata = item->ldata();
 
     painter->setPen(item->curColor(opt));
+
+    const StaffType* staffType = item->staffType();
+    if (staffType && staffType->isGamelanStaff()) {
+        const String text(u".");
+        painter->setFont(gamelanFont(item->magS()));
+        painter->drawText(PointF(gamelanTextOriginX(text, item->magS()), 0.0), text);
+        return;
+    }
 
     if (DeadSlapped* ds = item->deadSlapped()) {
         draw(ds, painter, opt);

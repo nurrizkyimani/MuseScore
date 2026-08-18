@@ -6522,6 +6522,24 @@
                   <genre>marching</genre>
                   <genre>classroom</genre>
             </Instrument>
+            <Instrument id="saron-slendro">
+                  <family>keyboard-percussion</family>
+                  <trackName>Saron (Slendro)</trackName>
+                  <longName>Saron</longName>
+                  <shortName>Saron</shortName>
+                  <description>Saron using Slendro numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <stafftype staffTypePreset="stdGamelanSlendro">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>60-69</aPitchRange>
+                  <pPitchRange>60-69</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="13"/>
+                  </Channel>
+                  <genre>world</genre>
+            </Instrument>
             <Instrument id="xylomarimba">
                   <family>keyboard-percussion</family>
                   <trackName>Xylomarimba</trackName>

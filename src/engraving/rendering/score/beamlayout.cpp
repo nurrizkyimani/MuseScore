@@ -144,6 +144,8 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     item->setTab((staffType && staffType->isTabStaff()) ? staffType : nullptr);
     item->setIsBesideTabStaff(item->tab() && !item->tab()->stemless() && !item->tab()->stemThrough());
 
+    const bool isGamelanStaff = staffType && staffType->isGamelanStaff();
+
     // TAB's with stem beside staves have special layout
     if (item->isBesideTabStaff()) {
         item->setUp(!item->tab()->stemsDown());
@@ -223,6 +225,7 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     }
 
     std::sort(item->notePositions().begin(), item->notePositions().end());
+
     ldata->setMag(mag);
 
     item->setCross(item->minCRMove() != item->maxCRMove());
@@ -236,7 +239,9 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     ChordRest* firstNote = item->elements().front();
     Measure* measure = firstNote->measure();
     bool hasMultipleVoices = measure->hasVoices(firstNote->staffIdx(), item->tick(), item->ticks());
-    if (computeUpForMovedCross(item)) {
+    if (isGamelanStaff) {
+        item->setUp(true);
+    } else if (computeUpForMovedCross(item)) {
     } else if (item->direction() != DirectionV::AUTO) {
         item->setUp(item->direction() == DirectionV::UP);
     } else if (item->maxCRMove() > 0) {

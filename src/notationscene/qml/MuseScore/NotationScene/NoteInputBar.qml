@@ -115,6 +115,8 @@ Item {
 
             readonly property MenuItem item: Boolean(itemModel) ? itemModel.item : null
             readonly property bool hasMenu: Boolean(item) && item.subitems.length !== 0
+            readonly property bool isGamelanDegree: noteInputModel.isGamelanStaff
+                                                      && ["note-c", "note-d", "note-e", "note-g", "note-a"].indexOf(item.id) !== -1
 
             width: gridView.cellWidth
             height: gridView.cellWidth
@@ -124,7 +126,8 @@ Item {
             accentButton: (Boolean(item) && item.checked) || menuLoader.isMenuOpened
             transparent: !accentButton
 
-            icon: Boolean(item) ? item.icon : IconCode.NONE
+            icon: Boolean(item) && !isGamelanDegree ? item.icon : IconCode.NONE
+            text: isGamelanDegree ? item.title : ""
             iconFont: ui.theme.toolbarIconsFont
 
             toolTipTitle: Boolean(item) ? item.title : ""

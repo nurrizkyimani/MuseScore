@@ -1187,7 +1187,11 @@ void NotationViewInputController::startDragElements(ElementType elementsType, co
 
     bool isFilterType = viewInteraction()->selection()->isRange();
     auto isDraggable = [isFilterType, elementsType](const EngravingItem* element) {
-        return element && element->selected() && (!isFilterType || elementsType == element->type());
+        if (!element || !element->selected() || (isFilterType && elementsType != element->type())) {
+            return false;
+        }
+        const StaffType* staffType = element->staffType();
+        return !(element->isNote() && staffType && staffType->isGamelanStaff());
     };
 
     viewInteraction()->startDrag(elements, elementsOffset, isDraggable);

@@ -50,6 +50,9 @@ double StemLayout::calcDefaultStemLength(Chord* item, const LayoutContext& ctx)
     double lineDistance = (staff ? staff->lineDistance(item->tick()) : 1.0);
 
     const StaffType* staffType = staff ? staff->staffTypeForElement(item) : nullptr;
+    if (staffType && staffType->isGamelanStaff()) {
+        return 2.5 * spatium;
+    }
     const StaffType* tab = (staffType && staffType->isTabStaff()) ? staffType : nullptr;
 
     bool isBesideTabStaff = tab && !tab->stemless() && !tab->stemThrough();

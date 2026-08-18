@@ -232,6 +232,7 @@ StaffTypes StaffType::type() const
 {
     static const std::map<String, StaffTypes> xmlNameToType {
         { u"stdNormal", StaffTypes::STANDARD },
+        { u"stdGamelanSlendro", StaffTypes::GAMELAN_SLENDRO },
 
         { u"perc1Line", StaffTypes::PERC_1LINE },
         { u"perc2Line", StaffTypes::PERC_2LINE },
@@ -1125,6 +1126,7 @@ void StaffType::initStaffTypes(const Color& defaultColor)
     m_presets = {
 //                       group,              xml-name,  human-readable-name,          lin stpOff  dist clef   bars stmless time  key    ledger invis     color
         StaffType(StaffGroup::STANDARD,   u"stdNormal", muse::mtrc("engraving", "Standard"),        5, 0,     1,   true,  true, false, true, true, true, false,  defaultColor),
+        StaffType(StaffGroup::STANDARD,   u"stdGamelanSlendro", muse::mtrc("engraving", "Gamelan Slendro"), 1, 0, 1, false, true, false, true, false, false, false, defaultColor),
         StaffType(StaffGroup::PERCUSSION, u"perc1Line", muse::mtrc("engraving", "Perc. 1 line"),    1, 0,     1,   true,  true, false, true, false, true, false,  defaultColor),
         StaffType(StaffGroup::PERCUSSION, u"perc2Line", muse::mtrc("engraving", "Perc. 2 lines"),   2, 0,     1,   true,  true, false, true, false, true, false,  defaultColor),
         StaffType(StaffGroup::PERCUSSION, u"perc3Line", muse::mtrc("engraving", "Perc. 3 lines"),   3, 0,     1,   true,  true, false, true, false, true, false,  defaultColor),

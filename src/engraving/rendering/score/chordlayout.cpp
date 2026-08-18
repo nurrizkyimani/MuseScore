@@ -1285,6 +1285,12 @@ bool ChordLayout::computeUpBeamCase(const Chord* item, Beam* beam)
 
 void ChordLayout::updateLedgerLines(Chord* item, LayoutContext& ctx)
 {
+    const StaffType* itemStaffType = item->staff() ? item->staff()->staffTypeForElement(item) : nullptr;
+    if (itemStaffType && itemStaffType->isGamelanStaff()) {
+        muse::DeleteAll(item->ledgerLines());
+        item->ledgerLines().clear();
+        return;
+    }
     // initialize for palette
     track_idx_t track = 0;                     // the track lines belong to
     // the line pos corresponding to the bottom line of the staff
@@ -1542,6 +1548,10 @@ void ChordLayout::computeUp(const Chord* item, Chord::LayoutData* ldata, const L
     const bool hasBeam = item->beam() && item->beam()->elements().size() > 1;
 
     const StaffType* tab = item->staff() ? item->staff()->staffTypeForElement(item) : 0;
+    if (tab && tab->isGamelanStaff()) {
+        ldata->up = true;
+        return;
+    }
     bool isTabStaff = tab && tab->isTabStaff();
     if (isTabStaff) {
         if (tab->stemless()) {
@@ -2816,7 +2826,9 @@ void ChordLayout::layoutChords3(const std::vector<Chord*>& chords,
                 noteX = chord->noteHeadWidth() - note->headBodyWidth();
             }
 
-            double ny = (note->line() + stepOffset) * stepDistance;
+            const StaffType* noteStaffType = note->staff() ? note->staff()->staffTypeForElement(note) : nullptr;
+            double ny = noteStaffType && noteStaffType->isGamelanStaff()
+                        ? 0.0 : (note->line() + stepOffset) * stepDistance;
             if (note->ldata()->pos().y() != ny) {
                 note->mutldata()->setPosY(ny);
                 if (stem) {

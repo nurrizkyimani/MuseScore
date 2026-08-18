@@ -461,6 +461,14 @@ void NotationInteraction::showShadowNoteForPosition(const PointF& pos)
         return;
     }
 
+    const Staff* staff = score()->staff(params.position.staffIdx);
+    const StaffType* staffType = staff ? staff->staffType(params.position.segment->tick()) : nullptr;
+    if (staffType && staffType->isGamelanStaff()) {
+        shadowNote.setVisible(false);
+        m_shadowNoteChanged.send(/*visible*/ false);
+        return;
+    }
+
     params.duration = inputState.duration();
     params.accidentalType = inputState.accidentalType();
     params.articulationIds = inputState.articulationIds();

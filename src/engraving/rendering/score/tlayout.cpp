@@ -22,6 +22,7 @@
 #include <cfloat>
 
 #include "tlayout.h"
+#include "gamelanrendering.h"
 
 #include "global/realfn.h"
 #include "global/types/number.h"
@@ -62,6 +63,7 @@
 #include "dom/figuredbass.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
+#include "dom/gamelannotation.h"
 
 #include "dom/glissando.h"
 #include "dom/gradualtempochange.h"
@@ -4142,11 +4144,17 @@ void TLayout::layoutNote(const Note* item, Note::LayoutData* ldata)
         ldata->setPos(PointF());
     }
 
+    const StaffType* staffType = item->staff() ? item->staff()->staffTypeForElement(item) : nullptr;
+    const bool useGamelan = staffType && staffType->isGamelanStaff();
     bool useTablature = item->staff() && item->staff()->isTabStaff(item->chord()->tick());
     ldata->useTablature.set_value(useTablature);
 
     RectF noteBBox;
-    if (useTablature) {
+    if (useGamelan) {
+        noteBBox = gamelanTextBbox(slendroDegreeText(item->pitch()), item->magS());
+        ldata->cachedNoteheadSym.set_value(SymId::noSym);
+        ldata->cachedSymNull.set_value(SymId::noSym);
+    } else if (useTablature) {
         if (item->displayFret() == Note::DisplayFretOption::Hide) {
             return;
         }

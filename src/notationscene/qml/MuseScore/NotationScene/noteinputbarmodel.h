@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <memory>
+
 #include <QQmlParserStatus>
 #include <qqmlintegration.h>
 
@@ -30,6 +32,7 @@
 #include "context/iglobalcontext.h"
 #include "ui/iuistate.h"
 #include "notationscene/inotationcommandscontroller.h"
+#include "global/async/asyncable.h"
 
 namespace mu::notation {
 class NoteInputBarModel : public muse::uicomponents::AbstractMenuModel, public QQmlParserStatus
@@ -39,6 +42,7 @@ class NoteInputBarModel : public muse::uicomponents::AbstractMenuModel, public Q
     QML_ELEMENT;
 
     Q_PROPERTY(bool isInputAllowed READ isInputAllowed NOTIFY isInputAllowedChanged)
+    Q_PROPERTY(bool isGamelanStaff READ isGamelanStaff NOTIFY isGamelanStaffChanged)
 
     muse::ContextInject<muse::ui::IUiState> uiState = { this };
     muse::ContextInject<context::IGlobalContext> context = { this };
@@ -51,9 +55,11 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     bool isInputAllowed() const;
+    bool isGamelanStaff() const;
 
 signals:
     void isInputAllowedChanged();
+    void isGamelanStaffChanged();
 
 private:
     enum NoteInputRoles {
@@ -81,5 +87,7 @@ private:
     muse::uicomponents::MenuItemList makeTextItems();
     muse::uicomponents::MenuItemList makeLinesItems();
     muse::uicomponents::MenuItemList makeChordAndFretboardDiagramsItems();
+
+    std::unique_ptr<muse::async::Asyncable> m_noteInputStateReceiver;
 };
 }
