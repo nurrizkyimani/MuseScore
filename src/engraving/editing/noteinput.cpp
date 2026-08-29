@@ -1309,7 +1309,15 @@ void NoteInput::addPitch(Transaction& tx, Score* score, const NoteInputParams& p
             return;
         }
         is.setVoice(0);
-        NoteVal nval = noteVal(score, degree->scorePitch, is.staffIdx(), false);
+        int registerOffset = numericProfile->defaultRegister;
+        if (!is.notes().empty() && numericProfile->degreeForPitch(is.notes().front().pitch)) {
+            registerOffset = numericPulseRegister(numericProfile, is.notes().front().pitch);
+        }
+        const int pitch = numericPulsePitch(numericProfile, degree, registerOffset);
+        if (pitch < 0) {
+            return;
+        }
+        NoteVal nval = noteVal(score, pitch, is.staffIdx(), false);
         is.setNotes({ nval });
         addPitch(tx, score, nval, !numericProfile->monophonic && addFlag);
         return;

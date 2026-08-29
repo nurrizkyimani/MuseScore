@@ -23,6 +23,7 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/editing/edittie.h"
+#include "engraving/editing/editnote.h"
 #include "engraving/editing/noteinput.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/rendering/score/numericpulserendering.h"
@@ -148,6 +149,37 @@ TEST(Engraving_GamelanNotationTests, NumericPulseProfileRejectsDuplicateDegreeDe
     EXPECT_FALSE(profile.isValid());
 }
 
+TEST(Engraving_GamelanNotationTests, NumericPulseRegisterMappingUsesProfileBounds)
+{
+    const InstrumentTemplate* instrumentTemplate = searchTemplate(u"saron-pelog");
+    ASSERT_NE(instrumentTemplate, nullptr);
+    const NumericPulseProfile& profile = instrumentTemplate->numericPulseProfile;
+    const NumericPulseDegree* degree = profile.degreeForNumber(5);
+    ASSERT_NE(degree, nullptr);
+
+    EXPECT_EQ(numericPulsePitch(&profile, degree, -1), 55);
+    EXPECT_EQ(numericPulsePitch(&profile, degree, 0), 67);
+    EXPECT_EQ(numericPulsePitch(&profile, degree, 1), 79);
+    EXPECT_EQ(numericPulsePitch(&profile, degree, 2), 91);
+    EXPECT_EQ(numericPulsePitch(&profile, degree, 3), -1);
+    EXPECT_EQ(numericPulseRegister(&profile, 55), -1);
+    EXPECT_EQ(numericPulseRegister(&profile, 79), 1);
+    EXPECT_EQ(numericPulseDegreeText(&profile, 79), muse::String(u"5"));
+}
+
+TEST(Engraving_GamelanNotationTests, RegisterDotsExpandGlyphAndMoveDurationMarksClear)
+{
+    const double spatium = 1.0;
+    const muse::String text(u"5");
+    const muse::RectF plain = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, 0, 1);
+    const muse::RectF upper = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, 2, 1);
+    const muse::RectF lower = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, -1, 1);
+
+    EXPECT_LT(upper.top(), plain.top());
+    EXPECT_GT(lower.bottom(), plain.bottom());
+    EXPECT_LT(rendering::score::numericPulseDurationMarkY(upper, spatium, 0), upper.top());
+}
+
 TEST(Engraving_GamelanNotationTests, NumericPulseStaffPreset)
 {
     const StaffType* staffType = StaffType::preset(StaffTypes::NUMERIC_PULSE);
@@ -188,6 +220,201 @@ TEST(Engraving_GamelanNotationTests, PelogAcceptsAllSevenDegreeInputs)
         EXPECT_TRUE(NoteInput::resolveNoteInputParams(score, inputIndex, false, params));
         EXPECT_EQ(params.numericDegree, inputIndex + 1);
     }
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, ArrowPitchModeStepsThroughPelogDegrees)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    enterDegree(score, 3);
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    Note* note = chord->upNote();
+    ASSERT_NE(note, nullptr);
+    score->select(note);
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree up"));
+    EditNote::upDown(score, true, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 65);
+    EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(note->staff(), note->tick()), note->pitch()),
+              muse::String::number(4));
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree down"));
+    EditNote::upDown(score, false, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 64);
+    EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(note->staff(), note->tick()), note->pitch()),
+              muse::String::number(3));
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, OctavePitchModeMovesAndClampsNumericRegister)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    enterDegree(score, 1);
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    Note* note = chord->upNote();
+    ASSERT_NE(note, nullptr);
+    score->select(note);
+
+    EditNote::upDown(score, true, UpDownMode::OCTAVE);
+    EXPECT_EQ(note->pitch(), 72);
+    EXPECT_EQ(numericPulseRegister(numericPulseProfile(note->staff(), note->tick()), note->pitch()), 1);
+
+    EditNote::upDown(score, true, UpDownMode::OCTAVE);
+    EXPECT_EQ(note->pitch(), 84);
+    EditNote::upDown(score, true, UpDownMode::OCTAVE);
+    EXPECT_EQ(note->pitch(), 84);
+
+    EditNote::upDown(score, false, UpDownMode::OCTAVE);
+    EXPECT_EQ(note->pitch(), 72);
+    EditNote::setNumericPulseRegister(score, -1);
+    EXPECT_EQ(note->pitch(), 48);
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsSelectedRegister)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    score->inputState().setNotes({ NoteInput::noteVal(score, 72, 0, false) });
+
+    enterDegree(score, 5);
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    ASSERT_NE(chord->upNote(), nullptr);
+    EXPECT_EQ(chord->upNote()->pitch(), 79);
+    EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(chord->staff(), chord->tick()), chord->upNote()->pitch()),
+              muse::String(u"5"));
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, ArrowPitchModeSkipsUnsupportedSlendroDegreesAndClamps)
+{
+    MasterScore* score = makeNumericPulseScore(u"saron-slendro");
+    ASSERT_NE(score, nullptr);
+    enterDegree(score, 3);
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    Note* note = chord->upNote();
+    ASSERT_NE(note, nullptr);
+    score->select(note);
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree up"));
+    EditNote::upDown(score, true, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 67);
+    EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(note->staff(), note->tick()), note->pitch()),
+              muse::String::number(5));
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree up"));
+    EditNote::upDown(score, true, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 69);
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree upper boundary"));
+    EditNote::upDown(score, true, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 69);
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree down"));
+    EditNote::upDown(score, false, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 67);
+
+    score->startCmd(TranslatableString::untranslatable("Numeric degree down"));
+    EditNote::upDown(score, false, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+    EXPECT_EQ(note->pitch(), 64);
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, ArrowUpReplacesEmptyPulseWithFirstProfileDegree)
+{
+    MasterScore* score = makeNumericPulseScore(u"gong-kemodong-pelog");
+    ASSERT_NE(score, nullptr);
+
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Enter empty pulse"), [&](Transaction& tx) {
+        NoteInput::addRest(tx, score);
+    });
+
+    Segment* segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    EngravingItem* item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isRest());
+    Rest* rest = toRest(item);
+    const Fraction originalDuration = rest->durationTypeTicks();
+    score->select(rest);
+
+    score->startCmd(TranslatableString::untranslatable("Fill empty pulse"));
+    Note* note = EditNote::replaceRestWithFirstNumericPulseDegree(score, rest);
+    score->endCmd();
+
+    ASSERT_NE(note, nullptr);
+    EXPECT_EQ(note->pitch(), 43);
+    EXPECT_EQ(note->chord()->durationTypeTicks(), originalDuration);
+    EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(note->staff(), note->tick()), note->pitch()),
+              muse::String::number(5));
+
+    score->undoRedo(true, nullptr);
+    segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    EXPECT_TRUE(item->isRest());
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, ArrowDownReplacesFirstProfileDegreeWithEmptyPulse)
+{
+    MasterScore* score = makeNumericPulseScore(u"gong-kemodong-pelog");
+    ASSERT_NE(score, nullptr);
+    enterDegree(score, 5);
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    Note* note = chord->upNote();
+    ASSERT_NE(note, nullptr);
+    const Fraction originalDuration = chord->durationTypeTicks();
+    score->select(note);
+
+    score->startCmd(TranslatableString::untranslatable("Empty first numeric degree"));
+    EditNote::upDown(score, false, UpDownMode::NUMERIC_PULSE);
+    score->endCmd();
+
+    Segment* segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    EngravingItem* item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isRest());
+    Rest* rest = toRest(item);
+    EXPECT_EQ(rest->durationTypeTicks(), originalDuration);
+
+    score->undoRedo(true, nullptr);
+    segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isChord());
+    note = toChord(item)->upNote();
+    ASSERT_NE(note, nullptr);
+    EXPECT_EQ(note->pitch(), 43);
+    EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(note->staff(), note->tick()), note->pitch()),
+              muse::String::number(5));
 
     delete score;
 }

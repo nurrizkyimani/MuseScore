@@ -32,6 +32,9 @@ struct NumericPulseProfile {
     bool monophonic = true;
     bool showEmptyPulses = true;
     bool durationMarksAbove = true;
+    int minimumRegister = -1;
+    int maximumRegister = 2;
+    int defaultRegister = 0;
 
     bool isValid() const;
     void read(XmlReader&);
@@ -45,5 +48,7 @@ struct NumericPulseProfile {
 const NumericPulseProfile* numericPulseProfile(const Instrument* instrument);
 const NumericPulseProfile* numericPulseProfile(const Staff* staff, const Fraction& tick);
 muse::String numericPulseDegreeText(const NumericPulseProfile* profile, int pitch);
+int numericPulseRegister(const NumericPulseProfile* profile, int pitch);
+int numericPulsePitch(const NumericPulseProfile* profile, const NumericPulseDegree* degree, int registerOffset);
 
 }

@@ -66,12 +66,23 @@ double numericPulseBeamAnchorY(const Beam* beam, const Chord* referenceChord)
         return beam ? beam->startAnchor().y() : 0.0;
     }
 
-    const Note* note = referenceChord->upNote();
-    // Use one representative digit so every numeric beam has the same height;
-    // digit-specific outlines (especially "5") must not move the rhythm grid.
-    const RectF digitBbox = numericPulseTextBbox(muse::String(u"5"), note->magS());
-    const double closestMarkY = note->pagePos().y() + digitBbox.top()
-                                - numericPulseRhythmMarkGap(note->spatium());
+    const Note* referenceNote = referenceChord->upNote();
+    double closestMarkY = referenceNote->pagePos().y();
+    bool foundNote = false;
+    for (const ChordRest* chordRest : beam->elements()) {
+        if (!chordRest || !chordRest->isChord() || !toChord(chordRest)->upNote()) {
+            continue;
+        }
+        const Note* note = toChord(chordRest)->upNote();
+        const NumericPulseProfile* profile = numericPulseProfile(note->staff(), note->tick());
+        const muse::String text = numericPulseDegreeText(profile, note->pitch());
+        const RectF glyphBbox = numericPulseGlyphBbox(text, note->magS(), note->spatium(),
+                                                       numericPulseRegister(profile, note->pitch()));
+        const double noteMarkY = note->pagePos().y() + glyphBbox.top()
+                                 - numericPulseRhythmMarkGap(note->spatium());
+        closestMarkY = foundNote ? std::min(closestMarkY, noteMarkY) : noteMarkY;
+        foundNote = true;
+    }
 
     int maximumMarks = 1;
     for (const ChordRest* chordRest : beam->elements()) {

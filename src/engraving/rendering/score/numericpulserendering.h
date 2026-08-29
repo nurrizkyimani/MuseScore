@@ -5,6 +5,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdlib>
 
 #include "draw/fontmetrics.h"
 #include "draw/types/font.h"
@@ -72,6 +73,35 @@ inline muse::RectF numericPulseEmptyPulseBbox(double spatium)
     return muse::RectF(-diameter * 0.5, centerY - diameter * 0.5, diameter, diameter);
 }
 
+inline double numericPulseRegisterDotDiameter(double spatium)
+{
+    return 0.25 * spatium;
+}
+
+inline double numericPulseRegisterDotGap(double spatium)
+{
+    return 0.16 * spatium;
+}
+
+inline muse::RectF numericPulseRegisterDotBbox(const muse::RectF& textBbox, double spatium,
+                                               int registerOffset, int index)
+{
+    const double diameter = numericPulseRegisterDotDiameter(spatium);
+    const double distance = numericPulseRegisterDotGap(spatium) + diameter * 0.5
+                            + index * (diameter + numericPulseRegisterDotGap(spatium));
+    const double centerY = registerOffset > 0 ? textBbox.top() - distance : textBbox.bottom() + distance;
+    return muse::RectF(-diameter * 0.5, centerY - diameter * 0.5, diameter, diameter);
+}
+
+inline muse::RectF numericPulseGlyphBbox(const muse::String& text, double scale, double spatium, int registerOffset)
+{
+    muse::RectF bbox = numericPulseTextBbox(text, scale);
+    for (int i = 0; i < std::abs(registerOffset); ++i) {
+        bbox = bbox.united(numericPulseRegisterDotBbox(numericPulseTextBbox(text, scale), spatium, registerOffset, i));
+    }
+    return bbox;
+}
+
 inline double numericPulseDurationMarkWidth(const muse::RectF& textBbox, double spatium)
 {
     // Extend slightly past both sides of the numeric glyph so a standalone
@@ -85,11 +115,13 @@ inline double numericPulseDurationMarkY(const muse::RectF& textBbox, double spat
            - numericPulseRhythmMarkDistance(spatium) * index;
 }
 
-inline muse::RectF numericPulseNoteBbox(const muse::String& text, double scale, double spatium, int durationMarks)
+inline muse::RectF numericPulseNoteBbox(const muse::String& text, double scale, double spatium,
+                                        int registerOffset, int durationMarks)
 {
-    muse::RectF bbox = numericPulseTextBbox(text, scale);
+    muse::RectF bbox = numericPulseGlyphBbox(text, scale, spatium, registerOffset);
     if (durationMarks > 0) {
-        const double width = numericPulseDurationMarkWidth(bbox, spatium);
+        const muse::RectF textBbox = numericPulseTextBbox(text, scale);
+        const double width = numericPulseDurationMarkWidth(textBbox, spatium);
         const double thickness = numericPulseRhythmMarkThickness(spatium);
         const double top = numericPulseDurationMarkY(bbox, spatium, durationMarks - 1) - thickness * 0.5;
         bbox = bbox.united(muse::RectF(-width * 0.5, top, width, thickness));

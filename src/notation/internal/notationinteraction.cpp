@@ -3982,6 +3982,26 @@ void NotationInteraction::movePitch(MoveDirection d, PitchMode mode)
     }
     EngravingItem* selected = score()->selection().element();
     if (selected && selected->isRest()) {
+        if (mode == PitchMode::NUMERIC_PULSE) {
+            if (d != MoveDirection::Up) {
+                return;
+            }
+
+            Rest* rest = toRest(selected);
+            const NumericPulseProfile* profile = numericPulseProfile(rest->staff(), rest->tick());
+            if (!profile || profile->degrees.empty()) {
+                return;
+            }
+
+            startEdit(TranslatableString("undoableAction", "Enter note"));
+            Note* note = EditNote::replaceRestWithFirstNumericPulseDegree(score(), rest);
+            apply();
+            if (note) {
+                select({ note }, SelectType::SINGLE);
+            }
+            return;
+        }
+
         if (noteInput()->state().staffGroup() == mu::engraving::StaffGroup::TAB) {
             // The rest won't be visible - don't try to move it...
             return;
@@ -3993,6 +4013,18 @@ void NotationInteraction::movePitch(MoveDirection d, PitchMode mode)
         EditNote::upDown(score(), MoveDirection::Up == d, mode);
     }
 
+    apply();
+}
+
+void NotationInteraction::setNumericPulseRegister(int registerOffset)
+{
+    if (score()->selection().uniqueNotes().empty()) {
+        noteInput()->setNumericPulseRegister(registerOffset);
+        return;
+    }
+
+    startEdit(TranslatableString("undoableAction", "Change numeric register"));
+    EditNote::setNumericPulseRegister(score(), registerOffset);
     apply();
 }
 

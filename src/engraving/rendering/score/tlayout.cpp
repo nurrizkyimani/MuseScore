@@ -4155,7 +4155,8 @@ void TLayout::layoutNote(const Note* item, Note::LayoutData* ldata)
         const int durationMarks = hasNativeBeam || !numericProfile->durationMarksAbove
                                   ? 0 : item->chord()->durationType().hooks();
         noteBBox = numericPulseNoteBbox(numericPulseDegreeText(numericProfile, item->pitch()),
-                                        item->magS(), item->spatium(), durationMarks);
+                                        item->magS(), item->spatium(),
+                                        numericPulseRegister(numericProfile, item->pitch()), durationMarks);
         ldata->cachedNoteheadSym.set_value(SymId::noSym);
         ldata->cachedSymNull.set_value(SymId::noSym);
     } else if (useTablature) {

@@ -28,6 +28,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/numericpulseprofile.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
@@ -663,7 +664,17 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
         } break;
         case PitchMode::OCTAVE:
             newVal = val;
-            newVal.pitch += up ? PITCH_DELTA_OCTAVE : -PITCH_DELTA_OCTAVE;
+            if (const NumericPulseProfile* profile = numericPulseProfile(staff, tick)) {
+                const NumericPulseDegree* degree = profile->degreeForPitch(val.pitch);
+                const int targetRegister = numericPulseRegister(profile, val.pitch) + (up ? 1 : -1);
+                const int targetPitch = numericPulsePitch(profile, degree, targetRegister);
+                if (targetPitch < 0) {
+                    continue;
+                }
+                newVal.pitch = targetPitch;
+            } else {
+                newVal.pitch += up ? PITCH_DELTA_OCTAVE : -PITCH_DELTA_OCTAVE;
+            }
             break;
         }
 
@@ -672,6 +683,30 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
     }
 
     setInputNotes(notes);
+}
+
+void NotationNoteInput::setNumericPulseRegister(int registerOffset)
+{
+    InputState& is = score()->inputState();
+    const NumericPulseProfile* profile = numericPulseProfile(is.staff(), is.tick());
+    if (!profile || profile->degrees.empty()) {
+        return;
+    }
+
+    const NumericPulseDegree* degree = nullptr;
+    if (!is.notes().empty()) {
+        degree = profile->degreeForPitch(is.notes().front().pitch);
+    }
+    if (!degree) {
+        degree = &profile->degrees.front();
+    }
+
+    const int pitch = numericPulsePitch(profile, degree, registerOffset);
+    if (pitch < 0) {
+        return;
+    }
+
+    setInputNotes({ NoteInput::noteVal(score(), pitch, is.staffIdx(), false) });
 }
 
 void NotationNoteInput::setRestMode(bool rest)

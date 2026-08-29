@@ -18,7 +18,7 @@ namespace mu::engraving {
 
 bool NumericPulseProfile::isValid() const
 {
-    if (id.empty() || degrees.empty()) {
+    if (id.empty() || degrees.empty() || minimumRegister > defaultRegister || defaultRegister > maximumRegister) {
         return false;
     }
 
@@ -28,7 +28,10 @@ bool NumericPulseProfile::isValid() const
     std::set<std::string> actions;
     for (const NumericPulseDegree& degree : degrees) {
         const int pitchClass = (degree.scorePitch % 12 + 12) % 12;
+        const int minimumPitch = degree.scorePitch + minimumRegister * 12;
+        const int maximumPitch = degree.scorePitch + maximumRegister * 12;
         if (degree.number <= 0 || degree.scorePitch < 0 || degree.scorePitch > 127
+            || minimumPitch < 0 || maximumPitch > 127
             || degree.inputIndex < 0 || degree.inputIndex > 6 || degree.label.empty() || degree.action.empty()
             || !numbers.insert(degree.number).second
             || !pitchClasses.insert(pitchClass).second
@@ -55,6 +58,12 @@ void NumericPulseProfile::read(XmlReader& e)
             showEmptyPulses = e.readBool();
         } else if (tag == "durationMarksAbove") {
             durationMarksAbove = e.readBool();
+        } else if (tag == "minimumRegister") {
+            minimumRegister = e.readInt();
+        } else if (tag == "maximumRegister") {
+            maximumRegister = e.readInt();
+        } else if (tag == "defaultRegister") {
+            defaultRegister = e.readInt();
         } else if (tag == "degree") {
             NumericPulseDegree degree;
             degree.number = e.intAttribute("number");
@@ -81,6 +90,9 @@ void NumericPulseProfile::write(XmlWriter& xml) const
     xml.tag("monophonic", monophonic);
     xml.tag("showEmptyPulses", showEmptyPulses);
     xml.tag("durationMarksAbove", durationMarksAbove);
+    xml.tag("minimumRegister", minimumRegister);
+    xml.tag("maximumRegister", maximumRegister);
+    xml.tag("defaultRegister", defaultRegister);
     for (const NumericPulseDegree& degree : degrees) {
         xml.tag("degree", {
             { "number", degree.number },
@@ -145,6 +157,27 @@ muse::String numericPulseDegreeText(const NumericPulseProfile* profile, int pitc
 {
     const NumericPulseDegree* degree = profile ? profile->degreeForPitch(pitch) : nullptr;
     return degree ? degree->label : muse::String(u"×");
+}
+
+int numericPulseRegister(const NumericPulseProfile* profile, int pitch)
+{
+    const NumericPulseDegree* degree = profile ? profile->degreeForPitch(pitch) : nullptr;
+    if (!degree) {
+        return 0;
+    }
+
+    const int difference = pitch - degree->scorePitch;
+    return difference % 12 == 0 ? difference / 12 : 0;
+}
+
+int numericPulsePitch(const NumericPulseProfile* profile, const NumericPulseDegree* degree, int registerOffset)
+{
+    if (!profile || !degree || registerOffset < profile->minimumRegister || registerOffset > profile->maximumRegister) {
+        return -1;
+    }
+
+    const int pitch = degree->scorePitch + registerOffset * 12;
+    return pitch >= 0 && pitch <= 127 ? pitch : -1;
 }
 
 }

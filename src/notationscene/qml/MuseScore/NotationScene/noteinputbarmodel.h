@@ -79,6 +79,7 @@ private:
     void load() override;
     void onActionsStateChanges(const muse::actions::ActionCodeList& codes) override;
     QString currentNumericPulseDurationAction() const;
+    int currentNumericPulseRegister() const;
     const engraving::NumericPulseProfile* activeNumericPulseProfile() const;
 
     muse::uicomponents::MenuItem* makeActionItem(const muse::ui::UiAction& action, const QString& section,

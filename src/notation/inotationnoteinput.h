@@ -70,6 +70,7 @@ public:
     virtual void setInputNote(const NoteInputParams& params) = 0;
     virtual void setInputNotes(const engraving::NoteValList& notes) = 0;
     virtual void moveInputNotes(bool up, engraving::UpDownMode mode) = 0;
+    virtual void setNumericPulseRegister(int registerOffset) = 0;
 
     virtual void setRestMode(bool rest) = 0;
     virtual void setAccidental(engraving::AccidentalType accidentalType) = 0;

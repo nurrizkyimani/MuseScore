@@ -2359,16 +2359,28 @@ void TDraw::draw(const Note* item, Painter* painter, const PaintOptions& opt)
         painter->setFont(numericPulseFont(item->magS()));
         painter->drawText(PointF(numericPulseTextOriginX(text, item->magS()), 0.0), text);
 
+        const RectF textBbox = numericPulseTextBbox(text, item->magS());
+        const int registerOffset = numericPulseRegister(numericProfile, item->pitch());
+        if (registerOffset != 0) {
+            painter->save();
+            painter->setBrush(item->curColor(opt));
+            painter->setNoPen();
+            for (int i = 0; i < std::abs(registerOffset); ++i) {
+                painter->drawEllipse(numericPulseRegisterDotBbox(textBbox, item->spatium(), registerOffset, i));
+            }
+            painter->restore();
+        }
+
         const Chord* chord = item->chord();
         const int durationMarks = numericProfile->durationMarksAbove && chord && !chord->beam()
                                   ? chord->durationType().hooks() : 0;
         if (durationMarks > 0) {
-            const RectF textBbox = numericPulseTextBbox(text, item->magS());
+            const RectF glyphBbox = numericPulseGlyphBbox(text, item->magS(), item->spatium(), registerOffset);
             const double width = numericPulseDurationMarkWidth(textBbox, item->spatium());
             painter->setPen(Pen(item->curColor(opt), numericPulseRhythmMarkThickness(item->spatium()),
                                 PenStyle::SolidLine, PenCapStyle::FlatCap));
             for (int i = 0; i < durationMarks; ++i) {
-                const double y = numericPulseDurationMarkY(textBbox, item->spatium(), i);
+                const double y = numericPulseDurationMarkY(glyphBbox, item->spatium(), i);
                 painter->drawLine(LineF(-width * 0.5, y, width * 0.5, y));
             }
         }

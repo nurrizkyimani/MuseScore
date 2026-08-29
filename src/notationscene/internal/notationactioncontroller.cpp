@@ -1731,6 +1731,7 @@ muse::Ret NotationActionController::moveWithRet(MoveDirection direction, bool qu
     const EngravingItem* selectedElement = interaction->selection()->element();
     INotationNoteInputPtr noteInput = interaction->noteInput();
     bool playChord = false;
+    bool usesNumericPulse = false;
 
     if ((direction == MoveDirection::Up || direction == MoveDirection::Down)) {
         const engraving::Staff* inputStaff = state.staff();
@@ -1738,15 +1739,22 @@ muse::Ret NotationActionController::moveWithRet(MoveDirection direction, bool qu
                                                                 ? engraving::numericPulseProfile(selectedElement->staff(), selectedElement->tick())
                                                                 : nullptr;
         const engraving::NumericPulseProfile* inputProfile = engraving::numericPulseProfile(inputStaff, state.tick());
-        if ((selectedProfile && selectedProfile->fixedBaseline) || (inputProfile && inputProfile->fixedBaseline)) {
-            return muse::make_ok();
-        }
+        const engraving::NumericPulseProfile* activeProfile = selectedElement ? selectedProfile : inputProfile;
+        usesNumericPulse = activeProfile != nullptr;
     }
 
     switch (direction) {
     case MoveDirection::Up:
     case MoveDirection::Down:
-        if (!quickly && selectedElement && selectedElement->isLyrics()) {
+        if (usesNumericPulse) {
+            const bool canStepDegree = selectedElement && (selectedElement->isNote() || selectedElement->isChord());
+            const bool canFillEmptyPulse = selectedElement && selectedElement->isRest() && direction == MoveDirection::Up;
+            if (canStepDegree || (!quickly && canFillEmptyPulse)) {
+                interaction->movePitch(direction, quickly ? PitchMode::OCTAVE : PitchMode::NUMERIC_PULSE);
+                seekAndPlaySelectedElement(true);
+            }
+            return muse::make_ok();
+        } else if (!quickly && selectedElement && selectedElement->isLyrics()) {
             interaction->moveLyrics(direction);
         } else if (selectedElement && (selectedElement->isTextBase() || selectedElement->isArticulationFamily())) {
             interaction->nudge(direction, quickly);

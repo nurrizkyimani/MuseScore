@@ -28,6 +28,7 @@
 #include "hook.h"
 #include "measure.h"
 #include "note.h"
+#include "numericpulseprofile.h"
 #include "part.h"
 #include "rest.h"
 #include "score.h"
@@ -326,6 +327,10 @@ void InputState::update(Selection& selection)
         const Instrument* instr = n->part()->instrument(n->tick());
         if (instr->useDrumset()) {
             setDrumNote(n->pitch());
+        } else if (numericPulseProfile(n->staff(), n->tick())) {
+            // Numeric input keeps the selected note's register so entering a
+            // different degree does not unexpectedly jump back to the center.
+            setNotes({ n->noteVal() });
         }
     }
 }

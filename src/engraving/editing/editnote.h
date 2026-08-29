@@ -34,9 +34,10 @@ enum class Key : signed char;
 class Score;
 class EngravingItem;
 class Articulation;
+class Rest;
 
 enum class UpDownMode : char {
-    CHROMATIC, OCTAVE, DIATONIC
+    CHROMATIC, OCTAVE, DIATONIC, NUMERIC_PULSE
 };
 
 class EditNote
@@ -49,6 +50,9 @@ public:
     static void changeAccidental(Score* score, Note* note, AccidentalType accidental);
     static void undoChangePitch(Score* score, Note* note, int pitch, int tpc1, int tpc2);
     static void undoChangeFretting(Score* score, Note* note, int pitch, int string, int fret, int tpc1, int tpc2);
+    static Note* replaceRestWithFirstNumericPulseDegree(Score* score, Rest* rest);
+    static Rest* replaceFirstNumericPulseDegreeWithRest(Score* score, Note* note);
+    static void setNumericPulseRegister(Score* score, int registerOffset);
     static void upDown(Score* score, bool up, UpDownMode mode);
 private:
     static void changeAccidental2(Note* n, int pitch, int tpc);

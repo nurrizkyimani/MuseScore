@@ -21,6 +21,8 @@
  */
 #include "noteinputbarmodel.h"
 
+#include <string>
+
 #include "types/translatablestring.h"
 
 #include "context/shortcutcontext.h"
@@ -34,6 +36,8 @@
 #include "internal/notationuiactions.h"
 #include "notationcommands.h"
 #include "engraving/dom/engravingitem.h"
+#include "engraving/dom/chord.h"
+#include "engraving/dom/note.h"
 #include "engraving/dom/numericpulseprofile.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
@@ -77,6 +81,18 @@ static bool isDurationAction(const QString& actionId)
            || actionId == QStringLiteral("pad-note-256")
            || actionId == QStringLiteral("pad-note-512")
            || actionId == QStringLiteral("pad-note-1024");
+}
+
+static bool isNumericRegisterAction(const QString& actionId)
+{
+    return actionId.startsWith(QStringLiteral("numeric-register-"));
+}
+
+static int numericRegisterForAction(const QString& actionId)
+{
+    bool ok = false;
+    const int value = actionId.mid(QStringLiteral("numeric-register-").size()).toInt(&ok);
+    return ok ? value : 0;
 }
 
 static bool isAlternativeNoteInputModeAction(const ActionCode& actionCode)
@@ -162,6 +178,7 @@ void NoteInputBarModel::load()
     const engraving::NumericPulseProfile* numericProfile = activeNumericPulseProfile();
     const bool usesNumericProfile = numericProfile != nullptr;
     const QString selectedDurationAction = usesNumericProfile ? currentNumericPulseDurationAction() : QString();
+    const int selectedRegister = usesNumericProfile ? currentNumericPulseRegister() : 0;
 
     if (usesNumericProfile) {
         struct NumericPulseAction {
@@ -192,6 +209,28 @@ void NoteInputBarModel::load()
             UiActionState state = item->state();
             state.checked = degree.action.toQString() == m_selectedNumericDegreeAction;
             item->setState(state);
+            items << item;
+        }
+
+        struct NumericRegisterAction {
+            int registerOffset;
+            const char16_t* label;
+            const char* description;
+        };
+        static const NumericRegisterAction registerActions[] = {
+            { -1, u"1\u0323", "Lower register" },
+            { 0, u"1", "Center register" },
+            { 1, u"1\u0307", "Upper register" },
+            { 2, u"1\u0308", "Two registers above" }
+        };
+        for (const NumericRegisterAction& definition : registerActions) {
+            const ActionCode code = "numeric-register-" + std::to_string(definition.registerOffset);
+            UiAction action(code, UiCtxAny, mu::context::CTX_ANY, Checkable::Yes);
+            action.title = TranslatableString::untranslatable(muse::String(definition.label));
+            action.description = TranslatableString::untranslatable(definition.description);
+            action.iconCode = IconCode::Code::NONE;
+            MenuItem* item = makeActionItem(action, QStringLiteral("numeric-register"));
+            item->setState(UiActionState::make_enabled(definition.registerOffset == selectedRegister));
             items << item;
         }
 
@@ -306,9 +345,21 @@ void NoteInputBarModel::handleMenuItem(const QString& itemId)
     const bool usesNumericProfile = numericProfile != nullptr;
     const bool selectNumericDegree = isNumericDegreeAction(itemId, numericProfile);
     const bool numericDuration = isDurationAction(itemId);
+    const bool numericRegister = isNumericRegisterAction(itemId);
     const bool enterEmptyPulse = itemId == QStringLiteral("rest");
     INotationPtr notation = context()->currentNotation();
     INotationInteractionPtr interaction = notation ? notation->interaction() : nullptr;
+
+    if (usesNumericProfile && numericRegister && interaction) {
+        INotationNoteInputPtr noteInput = interaction->noteInput();
+        INotationSelectionPtr selection = interaction->selection();
+        if ((!selection || selection->isNone()) && noteInput && !noteInput->isNoteInputMode()) {
+            noteInput->startNoteInput(NoteInputMethod::BY_NOTE_NAME);
+        }
+        interaction->setNumericPulseRegister(numericRegisterForAction(itemId));
+        load();
+        return;
+    }
 
     if (usesNumericProfile && (selectNumericDegree || numericDuration || enterEmptyPulse)) {
         INotationNoteInputPtr noteInput = interaction ? interaction->noteInput() : nullptr;
@@ -359,6 +410,9 @@ void NoteInputBarModel::onActionsStateChanges(const ActionCodeList& codes)
         if (item->section() == QStringLiteral("numeric-degree")) {
             state.checked = item->id() == m_selectedNumericDegreeAction;
             item->setState(state);
+        } else if (item->section() == QStringLiteral("numeric-register")) {
+            state.checked = numericRegisterForAction(item->id()) == currentNumericPulseRegister();
+            item->setState(state);
         } else if (isDurationAction(item->id())) {
             state.checked = item->id() == selectedDurationAction;
             item->setState(state);
@@ -389,6 +443,35 @@ QString NoteInputBarModel::currentNumericPulseDurationAction() const
     }
 }
 
+int NoteInputBarModel::currentNumericPulseRegister() const
+{
+    const engraving::NumericPulseProfile* profile = activeNumericPulseProfile();
+    if (!profile) {
+        return 0;
+    }
+
+    INotationPtr notation = context()->currentNotation();
+    INotationInteractionPtr interaction = notation ? notation->interaction() : nullptr;
+    INotationSelectionPtr selection = interaction ? interaction->selection() : nullptr;
+    const engraving::EngravingItem* selected = selection ? selection->element() : nullptr;
+    const engraving::Note* note = selected && selected->isNote() ? engraving::toNote(selected) : nullptr;
+    if (!note && selected && selected->isChord()) {
+        note = engraving::toChord(selected)->upNote();
+    }
+    if (note && profile->degreeForPitch(note->pitch())) {
+        return engraving::numericPulseRegister(profile, note->pitch());
+    }
+
+    INotationNoteInputPtr noteInput = interaction ? interaction->noteInput() : nullptr;
+    if (noteInput && !noteInput->state().notes().empty()) {
+        const int pitch = noteInput->state().notes().front().pitch;
+        if (profile->degreeForPitch(pitch)) {
+            return engraving::numericPulseRegister(profile, pitch);
+        }
+    }
+    return profile->defaultRegister;
+}
+
 MenuItem* NoteInputBarModel::makeActionItem(const UiAction& action, const QString& section,
                                             const muse::uicomponents::MenuItemList& subitems)
 {
@@ -396,7 +479,7 @@ MenuItem* NoteInputBarModel::makeActionItem(const UiAction& action, const QStrin
     // "add" is a local toolbar menu action, not an action registered in
     // UiActionsRegister. Querying its state produces a noisy error on every
     // toolbar reload.
-    if (action.code != ADD_ACTION_CODE) {
+    if (action.code != ADD_ACTION_CODE && action.code.rfind("numeric-register-", 0) != 0) {
         item->setState(uiActionsRegister()->actionState(action.code));
     }
     item->setSection(section);

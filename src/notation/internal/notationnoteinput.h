@@ -83,6 +83,7 @@ public:
     void setInputNote(const NoteInputParams& params) override;
     void setInputNotes(const NoteValList& notes) override;
     void moveInputNotes(bool up, PitchMode mode) override;
+    void setNumericPulseRegister(int registerOffset) override;
 
     void setRestMode(bool rest) override;
     void setAccidental(AccidentalType accidentalType) override;
