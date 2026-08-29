@@ -122,6 +122,42 @@ TEST(Engraving_GamelanNotationTests, RequestedPelogInstrumentProfilesAreAvailabl
     }
 }
 
+TEST(Engraving_GamelanNotationTests, TwoHandedInstrumentsUseTwoNumericPulseStaves)
+{
+    // Gendèr, gambang and siter are played with two independent hands, so each
+    // hand needs its own numeric-pulse line rather than sharing a single staff.
+    const std::array<const char16_t*, 3> twoHandedInstruments { {
+        u"gender-pelog",
+        u"gambang-pelog",
+        u"siter-pelog"
+    } };
+
+    for (const char16_t* instrumentId : twoHandedInstruments) {
+        const InstrumentTemplate* instrumentTemplate = searchTemplate(muse::String(instrumentId));
+        ASSERT_NE(instrumentTemplate, nullptr) << muse::String(instrumentId).toStdString();
+        EXPECT_EQ(instrumentTemplate->staffCount, size_t(2)) << muse::String(instrumentId).toStdString();
+
+        // Both hands must render as one-line numeric-pulse staves. staffLines is
+        // only populated per staff index that the instrument file mentions, so a
+        // missing <stafflines staff="2"> would silently leave the lower hand at
+        // the five-line default.
+        for (staff_idx_t staffIdx = 0; staffIdx < instrumentTemplate->staffCount; ++staffIdx) {
+            EXPECT_EQ(instrumentTemplate->staffLines[staffIdx], 1)
+                << muse::String(instrumentId).toStdString() << " staff " << staffIdx;
+        }
+
+        // The brace and spanning barlines are what read the two lines as one instrument.
+        EXPECT_EQ(instrumentTemplate->bracket[0], BracketType::BRACE) << muse::String(instrumentId).toStdString();
+        EXPECT_EQ(instrumentTemplate->bracketSpan[0], 2) << muse::String(instrumentId).toStdString();
+        // barlineSpan is a per-staff bool: <barlineSpan>2</barlineSpan> marks staff 0
+        // as joined to the staff below it.
+        EXPECT_TRUE(instrumentTemplate->barlineSpan[0]) << muse::String(instrumentId).toStdString();
+
+        // Widened so the lower hand can be written an octave below the baseline.
+        EXPECT_LE(instrumentTemplate->minPitchA, 48) << muse::String(instrumentId).toStdString();
+    }
+}
+
 TEST(Engraving_GamelanNotationTests, SlendroProfileRemainsAvailableForCompatibility)
 {
     const InstrumentTemplate* instrumentTemplate = searchTemplate(u"saron-slendro");

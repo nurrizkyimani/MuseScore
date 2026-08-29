@@ -16781,11 +16781,16 @@
                         <degree number="6" pitch="69" inputStep="33" inputIndex="5" action="note-a">6</degree>
                         <degree number="7" pitch="71" inputStep="34" inputIndex="6" action="note-b">7</degree>
                   </numericPulse>
+                  <staves>2</staves>
                   <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <stafflines staff="2">1</stafflines>
                   <clef>G</clef>
-                  <barlineSpan>1</barlineSpan>
-                  <aPitchRange>60-71</aPitchRange>
-                  <pPitchRange>60-71</pPitchRange>
+                  <clef staff="2">G</clef>
+                  <bracket>1</bracket>
+                  <bracketSpan>2</bracketSpan>
+                  <barlineSpan>2</barlineSpan>
+                  <aPitchRange>48-71</aPitchRange>
+                  <pPitchRange>48-71</pPitchRange>
                   <singleNoteDynamics>0</singleNoteDynamics>
                   <Channel>
                         <program value="11"/> <!--Vibraphone proxy-->
@@ -16812,11 +16817,16 @@
                         <degree number="6" pitch="69" inputStep="33" inputIndex="5" action="note-a">6</degree>
                         <degree number="7" pitch="71" inputStep="34" inputIndex="6" action="note-b">7</degree>
                   </numericPulse>
+                  <staves>2</staves>
                   <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <stafflines staff="2">1</stafflines>
                   <clef>G</clef>
-                  <barlineSpan>1</barlineSpan>
-                  <aPitchRange>60-71</aPitchRange>
-                  <pPitchRange>60-71</pPitchRange>
+                  <clef staff="2">G</clef>
+                  <bracket>1</bracket>
+                  <bracketSpan>2</bracketSpan>
+                  <barlineSpan>2</barlineSpan>
+                  <aPitchRange>48-71</aPitchRange>
+                  <pPitchRange>48-71</pPitchRange>
                   <singleNoteDynamics>0</singleNoteDynamics>
                   <Channel>
                         <program value="13"/> <!--Xylophone proxy-->
@@ -16905,11 +16915,16 @@
                         <degree number="6" pitch="69" inputStep="33" inputIndex="5" action="note-a">6</degree>
                         <degree number="7" pitch="71" inputStep="34" inputIndex="6" action="note-b">7</degree>
                   </numericPulse>
+                  <staves>2</staves>
                   <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <stafflines staff="2">1</stafflines>
                   <clef>G</clef>
-                  <barlineSpan>1</barlineSpan>
-                  <aPitchRange>60-71</aPitchRange>
-                  <pPitchRange>60-71</pPitchRange>
+                  <clef staff="2">G</clef>
+                  <bracket>1</bracket>
+                  <bracketSpan>2</bracketSpan>
+                  <barlineSpan>2</barlineSpan>
+                  <aPitchRange>48-71</aPitchRange>
+                  <pPitchRange>48-71</pPitchRange>
                   <singleNoteDynamics>0</singleNoteDynamics>
                   <Channel>
                         <program value="107"/> <!--Koto proxy-->
