@@ -126,17 +126,20 @@ void NotationNoteInput::startNoteInput(NoteInputMethod method, bool focusNotatio
     m_interaction->select({ el }, SelectType::SINGLE, 0);
 
     InputState& is = score()->inputState();
+    const Staff* staff = score()->staff(is.track() / VOICES);
+    const bool numericPulseInput = numericPulseProfile(staff, is.tick());
 
     Duration d(is.duration());
-    if (!d.isValid() || d.isZero() || d.type() == DurationType::V_MEASURE) {
+    if (numericPulseInput) {
+        is.setDuration(Duration(DurationType::V_QUARTER));
+        is.setNotes({});
+    } else if (!d.isValid() || d.isZero() || d.type() == DurationType::V_MEASURE) {
         is.setDuration(Duration(DurationType::V_QUARTER));
     }
     is.setAccidentalType(AccidentalType::NONE);
 
     is.setRest(false);
     is.setNoteEntryMode(true);
-
-    const Staff* staff = score()->staff(is.track() / VOICES);
 
     if (noteInputMethodAvailable(method, staff, is.tick())) {
         is.setNoteEntryMethod(method);
@@ -327,7 +330,12 @@ void NotationNoteInput::setupInputNote()
     const EngravingItem* selectedItem = score()->selection().element();
 
     if (selectedItem && selectedItem->isNote()) {
-        is.setNotes({ toNote(selectedItem)->noteVal() });
+        const Note* selectedNote = toNote(selectedItem);
+        if (numericPulseProfile(selectedNote->staff(), selectedNote->tick())) {
+            is.setNotes({});
+        } else {
+            is.setNotes({ selectedNote->noteVal() });
+        }
         return;
     }
 

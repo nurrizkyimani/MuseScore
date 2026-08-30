@@ -441,7 +441,7 @@ TEST(Engraving_GamelanNotationTests, OctavePitchModeMovesAndClampsNumericRegiste
     delete score;
 }
 
-TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsSelectedRegister)
+TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsExplicitRegister)
 {
     MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
@@ -454,6 +454,37 @@ TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsSelectedRegister)
     EXPECT_EQ(chord->upNote()->pitch(), 79);
     EXPECT_EQ(numericPulseDegreeText(numericPulseProfile(chord->staff(), chord->tick()), chord->upNote()->pitch()),
               muse::String(u"5"));
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, SelectingNumericNoteResetsInputDefaults)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    score->inputState().setDuration(DurationType::V_HALF);
+    score->inputState().setNotes({ NoteInput::noteVal(score, 48, 0, false) });
+
+    enterDegree(score, 2);
+    Chord* firstChord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(firstChord, nullptr);
+    Note* firstNote = firstChord->upNote();
+    ASSERT_NE(firstNote, nullptr);
+    EXPECT_EQ(firstNote->pitch(), 50);
+    EXPECT_EQ(firstChord->durationType(), DurationType::V_HALF);
+
+    score->select(firstNote);
+    score->inputState().update(score->selection());
+    EXPECT_EQ(score->inputState().duration().type(), DurationType::V_QUARTER);
+    EXPECT_TRUE(score->inputState().notes().empty());
+
+    score->inputState().setSegment(score->tick2segment(Fraction(1, 2), false, SegmentType::ChordRest));
+    enterDegree(score, 3);
+    Chord* secondChord = score->firstMeasure()->findChord(Fraction(1, 2), 0);
+    ASSERT_NE(secondChord, nullptr);
+    ASSERT_NE(secondChord->upNote(), nullptr);
+    EXPECT_EQ(secondChord->upNote()->pitch(), 64);
+    EXPECT_EQ(secondChord->durationType(), DurationType::V_QUARTER);
 
     delete score;
 }
