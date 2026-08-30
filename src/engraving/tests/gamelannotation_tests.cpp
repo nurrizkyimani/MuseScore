@@ -196,8 +196,7 @@ TEST(Engraving_GamelanNotationTests, NumericPulseRegisterMappingUsesProfileBound
     EXPECT_EQ(numericPulsePitch(&profile, degree, -1), 55);
     EXPECT_EQ(numericPulsePitch(&profile, degree, 0), 67);
     EXPECT_EQ(numericPulsePitch(&profile, degree, 1), 79);
-    EXPECT_EQ(numericPulsePitch(&profile, degree, 2), 91);
-    EXPECT_EQ(numericPulsePitch(&profile, degree, 3), -1);
+    EXPECT_EQ(numericPulsePitch(&profile, degree, 2), -1);
     EXPECT_EQ(numericPulseRegister(&profile, 55), -1);
     EXPECT_EQ(numericPulseRegister(&profile, 79), 1);
     EXPECT_EQ(numericPulseDegreeText(&profile, 79), muse::String(u"5"));
@@ -208,12 +207,22 @@ TEST(Engraving_GamelanNotationTests, RegisterDotsExpandGlyphAndMoveDurationMarks
     const double spatium = 1.0;
     const muse::String text(u"5");
     const muse::RectF plain = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, 0, 1);
-    const muse::RectF upper = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, 2, 1);
+    const muse::RectF upper = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, 1, 1);
     const muse::RectF lower = rendering::score::numericPulseNoteBbox(text, 1.0, spatium, -1, 1);
 
     EXPECT_LT(upper.top(), plain.top());
     EXPECT_GT(lower.bottom(), plain.bottom());
     EXPECT_LT(rendering::score::numericPulseDurationMarkY(upper, spatium, 0), upper.top());
+}
+
+TEST(Engraving_GamelanNotationTests, EmptyPulseDotIsReadableAtNormalScale)
+{
+    const double spatium = 2.0;
+    const muse::RectF bbox = rendering::score::numericPulseEmptyPulseBbox(spatium);
+
+    EXPECT_DOUBLE_EQ(bbox.width(), 0.50 * spatium);
+    EXPECT_DOUBLE_EQ(bbox.height(), 0.50 * spatium);
+    EXPECT_LT(bbox.bottom(), 0.0);
 }
 
 TEST(Engraving_GamelanNotationTests, NumericPulseStaffPreset)
@@ -306,12 +315,10 @@ TEST(Engraving_GamelanNotationTests, OctavePitchModeMovesAndClampsNumericRegiste
     EXPECT_EQ(numericPulseRegister(numericPulseProfile(note->staff(), note->tick()), note->pitch()), 1);
 
     EditNote::upDown(score, true, UpDownMode::OCTAVE);
-    EXPECT_EQ(note->pitch(), 84);
-    EditNote::upDown(score, true, UpDownMode::OCTAVE);
-    EXPECT_EQ(note->pitch(), 84);
+    EXPECT_EQ(note->pitch(), 72);
 
     EditNote::upDown(score, false, UpDownMode::OCTAVE);
-    EXPECT_EQ(note->pitch(), 72);
+    EXPECT_EQ(note->pitch(), 60);
     EditNote::setNumericPulseRegister(score, -1);
     EXPECT_EQ(note->pitch(), 48);
 

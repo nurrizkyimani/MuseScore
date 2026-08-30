@@ -442,7 +442,7 @@
     </SC>
   <SC>
     <key>pitch-up-octave</key>
-    <seq>Ctrl+Up</seq>
+    <seq>Ctrl+]</seq>
     </SC>
   <SC>
     <key>up-chord</key>
@@ -499,7 +499,7 @@
     </SC>
   <SC>
     <key>pitch-down-octave</key>
-    <seq>Ctrl+Down</seq>
+    <seq>Ctrl+[</seq>
     </SC>
   <SC>
     <key>down-chord</key>

@@ -33,7 +33,7 @@ struct NumericPulseProfile {
     bool showEmptyPulses = true;
     bool durationMarksAbove = true;
     int minimumRegister = -1;
-    int maximumRegister = 2;
+    int maximumRegister = 1;
     int defaultRegister = 0;
 
     bool isValid() const;

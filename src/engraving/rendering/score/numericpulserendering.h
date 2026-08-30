@@ -68,8 +68,8 @@ inline muse::RectF numericPulseEmptyPulseBbox(double spatium)
     // Do not use a text period here. Its glyph sits on the numeric-pulse staff
     // baseline and can disappear into the staff line. Keep the pulse dot fully
     // above that line and large enough to remain visible at normal zoom levels.
-    const double diameter = 0.34 * spatium;
-    const double centerY = -0.32 * spatium;
+    const double diameter = 0.50 * spatium;
+    const double centerY = -0.38 * spatium;
     return muse::RectF(-diameter * 0.5, centerY - diameter * 0.5, diameter, diameter);
 }
 

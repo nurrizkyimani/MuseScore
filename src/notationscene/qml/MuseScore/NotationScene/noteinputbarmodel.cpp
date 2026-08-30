@@ -218,10 +218,9 @@ void NoteInputBarModel::load()
             const char* description;
         };
         static const NumericRegisterAction registerActions[] = {
-            { -1, u"1\u0323", "Lower register" },
+            { -1, u"\u2193 \u2022", "Lower register" },
             { 0, u"1", "Center register" },
-            { 1, u"1\u0307", "Upper register" },
-            { 2, u"1\u0308", "Two registers above" }
+            { 1, u"\u2191 \u2022", "Upper register" }
         };
         for (const NumericRegisterAction& definition : registerActions) {
             const ActionCode code = "numeric-register-" + std::to_string(definition.registerOffset);
