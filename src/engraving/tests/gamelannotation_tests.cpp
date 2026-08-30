@@ -268,15 +268,12 @@ TEST(Engraving_GamelanNotationTests, FillingNumericMeasureCreatesIndependentlyEd
 {
     MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
-    Measure* measure = score->firstMeasure();
-    ASSERT_NE(measure, nullptr);
-    Rest* measureRest = toRest(measure->findChordRest(Fraction(0, 1), 0));
-    ASSERT_NE(measureRest, nullptr);
-
-    score->startCmd(TranslatableString::untranslatable("Normalize numeric empty pulses"));
-    score->undoRemoveElement(measureRest);
-    score->setRest(measure->tick(), 0, measure->ticks(), false, nullptr, true);
-    score->endCmd();
+    int normalizedMeasureCount = 0;
+    {
+        ScoreLoad scoreLoad;
+        normalizedMeasureCount = score->normalizeNumericPulseMeasureRests();
+    }
+    EXPECT_GT(normalizedMeasureCount, 0);
 
     for (int pulseIndex = 0; pulseIndex < 4; ++pulseIndex) {
         Segment* segment = score->tick2segment(Fraction(pulseIndex, 4), false, SegmentType::ChordRest);
@@ -285,6 +282,41 @@ TEST(Engraving_GamelanNotationTests, FillingNumericMeasureCreatesIndependentlyEd
         ASSERT_NE(pulseRest, nullptr) << pulseIndex;
         EXPECT_EQ(pulseRest->durationType().type(), DurationType::V_QUARTER);
         EXPECT_FALSE(pulseRest->durationType().isMeasure());
+    }
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, NormalizedMeasureStartsInputAtFirstPulse)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    int normalizedMeasureCount = 0;
+    {
+        ScoreLoad scoreLoad;
+        normalizedMeasureCount = score->normalizeNumericPulseMeasureRests();
+    }
+    ASSERT_GT(normalizedMeasureCount, 0);
+
+    InputState& inputState = score->inputState();
+    Segment* firstPulse = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(firstPulse, nullptr);
+    inputState.setSegment(firstPulse);
+    ASSERT_TRUE(inputState.cr()->isRest());
+    EXPECT_EQ(toRest(inputState.cr())->durationType().type(), DurationType::V_QUARTER);
+
+    enterDegree(score, 2);
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    EXPECT_EQ(chord->durationType().type(), DurationType::V_QUARTER);
+    EXPECT_EQ(score->inputState().tick(), Fraction(1, 4));
+
+    for (int pulseIndex = 1; pulseIndex < 4; ++pulseIndex) {
+        Segment* segment = score->tick2segment(Fraction(pulseIndex, 4), false, SegmentType::ChordRest);
+        ASSERT_NE(segment, nullptr) << pulseIndex;
+        ASSERT_NE(segment->element(0), nullptr) << pulseIndex;
+        EXPECT_TRUE(segment->element(0)->isRest()) << pulseIndex;
     }
 
     delete score;
@@ -841,6 +873,16 @@ TEST(Engraving_GamelanNotationTests, SaveReloadPreservesStaffAndPulseData)
     EXPECT_EQ(firstChord->upNote()->pitch(), 69);
     EXPECT_EQ(secondChord->upNote()->pitch(), 67);
     EXPECT_EQ(secondChord->durationType().type(), DurationType::V_EIGHTH);
+
+    Measure* firstEmptyMeasure = reopened->firstMeasure()->nextMeasure();
+    ASSERT_NE(firstEmptyMeasure, nullptr);
+    for (int pulseIndex = 0; pulseIndex < 4; ++pulseIndex) {
+        const Fraction pulseTick = firstEmptyMeasure->tick() + Fraction(pulseIndex, 4);
+        ChordRest* pulse = firstEmptyMeasure->findChordRest(pulseTick, 0);
+        ASSERT_NE(pulse, nullptr) << pulseIndex;
+        ASSERT_TRUE(pulse->isRest()) << pulseIndex;
+        EXPECT_EQ(toRest(pulse)->durationType().type(), DurationType::V_QUARTER);
+    }
 
     delete reopened;
     delete score;

@@ -577,6 +577,46 @@ std::vector<Rest*> Score::setRests(const Fraction& _tick, track_idx_t track, con
     return rests;
 }
 
+//---------------------------------------------------------
+//   normalizeNumericPulseMeasureRests
+//    Convert legacy full-measure rests into one real rest
+//    per numeric pulse. This keeps selection and note entry
+//    anchored to the same pulse that is drawn.
+//---------------------------------------------------------
+
+int Score::normalizeNumericPulseMeasureRests()
+{
+    int normalizedMeasureCount = 0;
+
+    for (Measure* measure = firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (staff_idx_t staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
+            Staff* numericStaff = staff(staffIdx);
+            if (!numericStaff || !numericPulseProfile(numericStaff, measure->tick())) {
+                continue;
+            }
+
+            const track_idx_t track = staff2track(staffIdx);
+            ChordRest* chordRest = measure->findChordRest(measure->tick(), track);
+            if (!chordRest || !chordRest->isRest()) {
+                continue;
+            }
+
+            Rest* measureRest = toRest(chordRest);
+            const NumericPulseProfile* profile = numericPulseProfile(numericStaff, measureRest->tick());
+            if (!profile || !profile->showEmptyPulses || !measureRest->durationType().isMeasure()
+                || measure->timesig() != measure->ticks()) {
+                continue;
+            }
+
+            undoRemoveElement(measureRest);
+            setRest(measure->tick(), track, measure->stretchedLen(numericStaff), false, nullptr, true);
+            ++normalizedMeasureCount;
+        }
+    }
+
+    return normalizedMeasureCount;
+}
+
 Slur* Score::addSlur(ChordRest* firstChordRest, ChordRest* secondChordRest, const Slur* slurTemplate)
 {
     if (!secondChordRest) {

@@ -209,6 +209,10 @@ Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw
     // NOTE: must be done after all score and parts have been read
     compat::CompatUtils::doCompatibilityConversions(masterScore);
 
+    if (ret) {
+        masterScore->normalizeNumericPulseMeasureRests();
+    }
+
     // Read automation
     {
         if (masterScore->automation()) {
