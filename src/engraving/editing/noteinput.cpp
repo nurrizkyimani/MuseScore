@@ -1328,7 +1328,8 @@ void NoteInput::addPitch(Transaction& tx, Score* score, const NoteInputParams& p
         }
         is.setVoice(0);
         int registerOffset = numericProfile->defaultRegister;
-        if (!is.notes().empty() && numericProfile->degreeForPitch(is.notes().front().pitch)) {
+        if (is.numericPulseRegisterExplicit() && !is.notes().empty()
+            && numericProfile->degreeForPitch(is.notes().front().pitch)) {
             registerOffset = numericPulseRegister(numericProfile, is.notes().front().pitch);
         }
         const int pitch = numericPulsePitch(numericProfile, degree, registerOffset);

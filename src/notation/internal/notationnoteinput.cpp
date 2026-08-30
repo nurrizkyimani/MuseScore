@@ -133,6 +133,7 @@ void NotationNoteInput::startNoteInput(NoteInputMethod method, bool focusNotatio
     if (numericPulseInput) {
         is.setDuration(Duration(DurationType::V_QUARTER));
         is.setNotes({});
+        is.setNumericPulseRegisterExplicit(false);
     } else if (!d.isValid() || d.isZero() || d.type() == DurationType::V_MEASURE) {
         is.setDuration(Duration(DurationType::V_QUARTER));
     }
@@ -333,6 +334,7 @@ void NotationNoteInput::setupInputNote()
         const Note* selectedNote = toNote(selectedItem);
         if (numericPulseProfile(selectedNote->staff(), selectedNote->tick())) {
             is.setNotes({});
+            is.setNumericPulseRegisterExplicit(false);
         } else {
             is.setNotes({ selectedNote->noteVal() });
         }
@@ -740,6 +742,7 @@ void NotationNoteInput::setNumericPulseRegister(int registerOffset)
     }
 
     setInputNotes({ NoteInput::noteVal(score(), pitch, is.staffIdx(), false) });
+    is.setNumericPulseRegisterExplicit(true);
 }
 
 void NotationNoteInput::setRestMode(bool rest)

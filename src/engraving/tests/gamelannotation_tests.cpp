@@ -446,6 +446,7 @@ TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsExplicitRegister)
     MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     score->inputState().setNotes({ NoteInput::noteVal(score, 72, 0, false) });
+    score->inputState().setNumericPulseRegisterExplicit(true);
 
     enterDegree(score, 5);
     Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
@@ -458,12 +459,29 @@ TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsExplicitRegister)
     delete score;
 }
 
+TEST(Engraving_GamelanNotationTests, NumericDegreeInputDefaultsToCenterRegister)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    score->inputState().setNotes({ NoteInput::noteVal(score, 48, 0, false) });
+
+    enterDegree(score, 2);
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    ASSERT_NE(chord->upNote(), nullptr);
+    EXPECT_EQ(chord->upNote()->pitch(), 62);
+    EXPECT_EQ(numericPulseRegister(numericPulseProfile(chord->staff(), chord->tick()), chord->upNote()->pitch()), 0);
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, SelectingNumericNoteResetsInputDefaults)
 {
     MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     score->inputState().setDuration(DurationType::V_HALF);
     score->inputState().setNotes({ NoteInput::noteVal(score, 48, 0, false) });
+    score->inputState().setNumericPulseRegisterExplicit(true);
 
     enterDegree(score, 2);
     Chord* firstChord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
@@ -477,6 +495,7 @@ TEST(Engraving_GamelanNotationTests, SelectingNumericNoteResetsInputDefaults)
     score->inputState().update(score->selection());
     EXPECT_EQ(score->inputState().duration().type(), DurationType::V_QUARTER);
     EXPECT_TRUE(score->inputState().notes().empty());
+    EXPECT_FALSE(score->inputState().numericPulseRegisterExplicit());
 
     score->inputState().setSegment(score->tick2segment(Fraction(1, 2), false, SegmentType::ChordRest));
     enterDegree(score, 3);
