@@ -152,11 +152,11 @@
         },
         {
             "command": "command://notation/pitch-up-octave",
-            "sequences": ["Ctrl+]"]
+            "sequences": ["]"]
         },
         {
             "command": "command://notation/pitch-down-octave",
-            "sequences": ["Ctrl+["]
+            "sequences": ["["]
         },
         {
             "command": "command://notation/toggle-note-input-by-note-name",

@@ -225,6 +225,89 @@ TEST(Engraving_GamelanNotationTests, EmptyPulseDotIsReadableAtNormalScale)
     EXPECT_LT(bbox.bottom(), 0.0);
 }
 
+TEST(Engraving_GamelanNotationTests, WholeMeasureEmptyPulseCountFollowsMeter)
+{
+    EXPECT_EQ(rendering::score::numericPulseMeasurePulseCount(Fraction(4, 4), Fraction(4, 4)), 4);
+    EXPECT_EQ(rendering::score::numericPulseMeasurePulseCount(Fraction(3, 4), Fraction(3, 4)), 3);
+    EXPECT_EQ(rendering::score::numericPulseMeasurePulseCount(Fraction(6, 8), Fraction(6, 8)), 6);
+    EXPECT_EQ(rendering::score::numericPulseMeasurePulseCount(Fraction(1, 4), Fraction(4, 4)), 1);
+
+    const double spatium = 2.0;
+    const muse::RectF group = rendering::score::numericPulseEmptyPulseGroupBbox(spatium, 4, 20.0);
+    EXPECT_GT(group.width(), rendering::score::numericPulseEmptyPulseBbox(spatium).width());
+    EXPECT_LT(group.left(), 0.0);
+    EXPECT_GT(group.right(), 0.0);
+}
+
+TEST(Engraving_GamelanNotationTests, WholeMeasureRestLaysOutOneDotPerPulse)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+
+    Segment* segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    Rest* rest = toRest(segment->element(0));
+    ASSERT_NE(rest, nullptr);
+    ASSERT_TRUE(rest->durationType().isMeasure());
+
+    score->setLayoutAll();
+    score->doLayout();
+
+    const int pulseCount = rendering::score::numericPulseMeasurePulseCount(
+        rest->measure()->ticks(), rest->measure()->timesig());
+    const muse::RectF expected = rendering::score::numericPulseEmptyPulseGroupBbox(
+        rest->spatium(), pulseCount, rest->measure()->width());
+    EXPECT_EQ(pulseCount, 4);
+    EXPECT_DOUBLE_EQ(rest->ldata()->bbox().left(), expected.left());
+    EXPECT_DOUBLE_EQ(rest->ldata()->bbox().right(), expected.right());
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, FillingNumericMeasureCreatesIndependentlyEditablePulseRests)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    Measure* measure = score->firstMeasure();
+    ASSERT_NE(measure, nullptr);
+    Rest* measureRest = toRest(measure->findChordRest(Fraction(0, 1), 0));
+    ASSERT_NE(measureRest, nullptr);
+
+    score->startCmd(TranslatableString::untranslatable("Normalize numeric empty pulses"));
+    score->undoRemoveElement(measureRest);
+    score->setRest(measure->tick(), 0, measure->ticks(), false, nullptr, true);
+    score->endCmd();
+
+    for (int pulseIndex = 0; pulseIndex < 4; ++pulseIndex) {
+        Segment* segment = score->tick2segment(Fraction(pulseIndex, 4), false, SegmentType::ChordRest);
+        ASSERT_NE(segment, nullptr) << pulseIndex;
+        Rest* pulseRest = toRest(segment->element(0));
+        ASSERT_NE(pulseRest, nullptr) << pulseIndex;
+        EXPECT_EQ(pulseRest->durationType().type(), DurationType::V_QUARTER);
+        EXPECT_FALSE(pulseRest->durationType().isMeasure());
+    }
+
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, WesternAugmentationDotIsHiddenOnNumericPulseStaff)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    score->inputState().setDots(1);
+    enterDegree(score, 4);
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    ASSERT_EQ(chord->upNote()->dots().size(), 1u);
+
+    score->setLayoutAll();
+    score->doLayout();
+    EXPECT_TRUE(chord->upNote()->dot(0)->ldata()->bbox().isEmpty());
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, NumericPulseStaffPreset)
 {
     const StaffType* staffType = StaffType::preset(StaffTypes::NUMERIC_PULSE);

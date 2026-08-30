@@ -2451,6 +2451,11 @@ void TDraw::draw(const Note* item, Painter* painter, const PaintOptions& opt)
 void TDraw::draw(const NoteDot* item, Painter* painter, const PaintOptions& opt)
 {
     TRACE_DRAW_ITEM;
+    if (numericPulseProfile(item->staff(), item->tick())) {
+        // Numeric-pulse notation uses register dots and rhythm marks. A Western
+        // augmentation glyph beside the number is visually ambiguous here.
+        return;
+    }
     if (item->note() && item->note()->dotsHidden()) {     // don't draw dot if note is hidden
         return;
     } else if (item->rest() && item->rest()->isGap()) {  // don't draw dot for gap rests
@@ -2614,10 +2619,18 @@ void TDraw::draw(const Rest* item, Painter* painter, const PaintOptions& opt)
     const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
     if (numericProfile) {
         if (numericProfile->showEmptyPulses) {
+            int pulseCount = 1;
+            double availableWidth = 0.0;
+            if (item->durationType().isMeasure() && item->measure()) {
+                pulseCount = numericPulseMeasurePulseCount(item->measure()->ticks(), item->measure()->timesig());
+                availableWidth = item->measure()->width();
+            }
             painter->save();
             painter->setBrush(item->curColor(opt));
             painter->setNoPen();
-            painter->drawEllipse(numericPulseEmptyPulseBbox(item->spatium()));
+            for (int pulseIndex = 0; pulseIndex < pulseCount; ++pulseIndex) {
+                painter->drawEllipse(numericPulseEmptyPulseBbox(item->spatium(), pulseIndex, pulseCount, availableWidth));
+            }
             painter->restore();
         }
         return;

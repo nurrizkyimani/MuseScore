@@ -4281,6 +4281,11 @@ void TLayout::layoutNoteDot(const NoteDot* item, NoteDot::LayoutData* ldata)
     LAYOUT_CALL_ITEM(item);
     LD_INDEPENDENT;
 
+    if (numericPulseProfile(item->staff(), item->tick())) {
+        ldata->setBbox(RectF());
+        return;
+    }
+
     if (ldata->isValid()) {
         return;
     }

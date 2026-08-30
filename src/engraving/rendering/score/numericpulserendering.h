@@ -10,6 +10,7 @@
 #include "draw/fontmetrics.h"
 #include "draw/types/font.h"
 #include "draw/types/geometry.h"
+#include "engraving/types/fraction.h"
 #include "global/types/string.h"
 
 namespace mu::engraving::rendering::score {
@@ -71,6 +72,42 @@ inline muse::RectF numericPulseEmptyPulseBbox(double spatium)
     const double diameter = 0.50 * spatium;
     const double centerY = -0.38 * spatium;
     return muse::RectF(-diameter * 0.5, centerY - diameter * 0.5, diameter, diameter);
+}
+
+inline int numericPulseMeasurePulseCount(const Fraction& measureDuration, const Fraction& timeSignature)
+{
+    if (!measureDuration.isValid() || !timeSignature.isValid() || timeSignature.denominator() <= 0) {
+        return 1;
+    }
+
+    // The meter denominator defines the visible pulse unit: quarter-note pulses
+    // in 4/4 and eighth-note pulses in 6/8. Irregular/pickup measures naturally
+    // show only the pulses contained in their actual duration.
+    const Fraction pulseCount = (measureDuration / Fraction(1, timeSignature.denominator())).reduced();
+    return pulseCount.denominator() == 1 ? std::max(1, pulseCount.numerator()) : 1;
+}
+
+inline muse::RectF numericPulseEmptyPulseBbox(double spatium, int pulseIndex, int pulseCount, double availableWidth)
+{
+    muse::RectF bbox = numericPulseEmptyPulseBbox(spatium);
+    if (pulseCount <= 1 || availableWidth <= 0.0) {
+        return bbox;
+    }
+
+    const double paddedWidth = std::max(0.0, availableWidth - 2.0 * spatium);
+    const double pulseSpacing = paddedWidth / pulseCount;
+    const double centerX = (pulseIndex + 0.5) * pulseSpacing - paddedWidth * 0.5;
+    bbox.translate(centerX, 0.0);
+    return bbox;
+}
+
+inline muse::RectF numericPulseEmptyPulseGroupBbox(double spatium, int pulseCount, double availableWidth)
+{
+    muse::RectF bbox = numericPulseEmptyPulseBbox(spatium, 0, pulseCount, availableWidth);
+    for (int pulseIndex = 1; pulseIndex < pulseCount; ++pulseIndex) {
+        bbox = bbox.united(numericPulseEmptyPulseBbox(spatium, pulseIndex, pulseCount, availableWidth));
+    }
+    return bbox;
 }
 
 inline double numericPulseRegisterDotDiameter(double spatium)

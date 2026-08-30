@@ -63,6 +63,7 @@
 #include "../dom/measurerepeat.h"
 #include "../dom/note.h"
 #include "../dom/noteline.h"
+#include "../dom/numericpulseprofile.h"
 #include "../dom/ottava.h"
 #include "../dom/pagelockindicator.h"
 #include "../dom/part.h"
@@ -520,10 +521,22 @@ std::vector<Rest*> Score::setRests(const Fraction& _tick, track_idx_t track, con
             continue;
         }
 
-        if ((measure->timesig() == measure->ticks())       // not in pickup measure
-            && fullMeasure
-            && !tuplet
-            && useFullMeasureRest) {
+        const NumericPulseProfile* numericProfile = numericPulseProfile(staff, tick);
+        const bool splitIntoNumericPulses = numericProfile && numericProfile->showEmptyPulses
+                                            && measure->timesig() == measure->ticks()
+                                            && fullMeasure && !tuplet;
+        if (splitIntoNumericPulses) {
+            const int pulseCount = std::max(1, measure->timesig().numerator());
+            const TDuration pulseDuration(Fraction(1, measure->timesig().denominator()));
+            for (int pulseIndex = 0; pulseIndex < pulseCount; ++pulseIndex) {
+                Rest* rest = addRest(tick, track, pulseDuration, tuplet);
+                rests.push_back(rest);
+                tick += rest->actualTicks();
+            }
+        } else if ((measure->timesig() == measure->ticks())       // not in pickup measure
+                   && fullMeasure
+                   && !tuplet
+                   && useFullMeasureRest) {
             Rest* rest = addRest(tick, track, TDuration(DurationType::V_MEASURE), tuplet);
             tick += rest->actualTicks();
             rests.push_back(rest);

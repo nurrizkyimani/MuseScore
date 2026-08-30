@@ -87,8 +87,14 @@ void RestLayout::layoutRest(const Rest* item, Rest::LayoutData* ldata, const Lay
     if (numericProfile) {
         ldata->sym = SymId::noSym;
         ldata->setPosY(0.0);
+        int pulseCount = 1;
+        double availableWidth = 0.0;
+        if (item->durationType().isMeasure() && item->measure()) {
+            pulseCount = numericPulseMeasurePulseCount(item->measure()->ticks(), item->measure()->timesig());
+            availableWidth = item->measure()->width();
+        }
         ldata->setBbox(numericProfile->showEmptyPulses
-                       ? numericPulseEmptyPulseBbox(item->spatium()) : RectF());
+                       ? numericPulseEmptyPulseGroupBbox(item->spatium(), pulseCount, availableWidth) : RectF());
         if (!item->shouldNotBeDrawn()) {
             fillShape(item, ldata, ctx.conf());
         }
