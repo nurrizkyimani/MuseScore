@@ -450,6 +450,7 @@ TEST(Engraving_GamelanNotationTests, NumericDegreeInputKeepsExplicitRegister)
     MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     score->inputState().setNotes({ NoteInput::noteVal(score, 72, 0, false) });
+    score->inputState().setNumericPulseRegisterOffset(1);
     score->inputState().setNumericPulseRegisterExplicit(true);
 
     enterDegree(score, 5);
@@ -479,12 +480,33 @@ TEST(Engraving_GamelanNotationTests, NumericDegreeInputDefaultsToCenterRegister)
     delete score;
 }
 
+TEST(Engraving_GamelanNotationTests, NumericDegreeInputUsesExplicitCenterRegister)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+    // A stale preview pitch must not override an explicitly selected center
+    // register when the next numeric degree is entered.
+    score->inputState().setNotes({ NoteInput::noteVal(score, 48, 0, false) });
+    score->inputState().setNumericPulseRegisterOffset(0);
+    score->inputState().setNumericPulseRegisterExplicit(true);
+
+    enterDegree(score, 3);
+    Chord* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    ASSERT_NE(chord, nullptr);
+    ASSERT_NE(chord->upNote(), nullptr);
+    EXPECT_EQ(chord->upNote()->pitch(), 64);
+    EXPECT_EQ(numericPulseRegister(numericPulseProfile(chord->staff(), chord->tick()), chord->upNote()->pitch()), 0);
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, SelectingNumericNoteResetsInputDefaults)
 {
     MasterScore* score = makeNumericPulseScore();
     ASSERT_NE(score, nullptr);
     score->inputState().setDuration(DurationType::V_HALF);
     score->inputState().setNotes({ NoteInput::noteVal(score, 48, 0, false) });
+    score->inputState().setNumericPulseRegisterOffset(-1);
     score->inputState().setNumericPulseRegisterExplicit(true);
 
     enterDegree(score, 2);

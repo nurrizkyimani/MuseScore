@@ -233,6 +233,7 @@ void InputState::update(Selection& selection)
     setAccidentalType(AccidentalType::NONE);
     setNotes({});
     setNumericPulseRegisterExplicit(false);
+    setNumericPulseRegisterOffset(0);
     setBeyondScore(false);
 
     Note* n1 = nullptr;

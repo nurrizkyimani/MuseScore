@@ -94,6 +94,8 @@ public:
 
     bool numericPulseRegisterExplicit() const { return m_numericPulseRegisterExplicit; }
     void setNumericPulseRegisterExplicit(bool value) { m_numericPulseRegisterExplicit = value; }
+    int numericPulseRegisterOffset() const { return m_numericPulseRegisterOffset; }
+    void setNumericPulseRegisterOffset(int value) { m_numericPulseRegisterOffset = value; }
 
     voice_idx_t voice() const { return m_track == muse::nidx ? 0 : (m_track % VOICES); }
     void setVoice(voice_idx_t v);
@@ -154,6 +156,7 @@ private:
 
     NoteValList m_notes;
     bool m_numericPulseRegisterExplicit = false;
+    int m_numericPulseRegisterOffset = 0;
 
     Segment* m_lastSegment = nullptr;
     Segment* m_segment = nullptr; // current segment

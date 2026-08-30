@@ -470,12 +470,8 @@ int NoteInputBarModel::currentNumericPulseRegister() const
     INotationPtr notation = context()->currentNotation();
     INotationInteractionPtr interaction = notation ? notation->interaction() : nullptr;
     INotationNoteInputPtr noteInput = interaction ? interaction->noteInput() : nullptr;
-    if (noteInput && noteInput->state().numericPulseRegisterExplicit()
-        && !noteInput->state().notes().empty()) {
-        const int pitch = noteInput->state().notes().front().pitch;
-        if (profile->degreeForPitch(pitch)) {
-            return engraving::numericPulseRegister(profile, pitch);
-        }
+    if (noteInput && noteInput->state().numericPulseRegisterExplicit()) {
+        return noteInput->state().numericPulseRegisterOffset();
     }
     return profile->defaultRegister;
 }

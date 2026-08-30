@@ -84,6 +84,16 @@ NotationNoteInput::NotationNoteInput(const IGetScore* getScore, INotationInterac
     m_interaction->selectionChanged().onNotify(this, [this]() {
         if (!isNoteInputMode()) {
             updateInputState();
+        } else if (numericPulseProfile(state().staff(), state().tick())) {
+            // Selecting another pulse while numeric input is active moves the
+            // cursor without going through InputState::update(). Clear the
+            // preview/register inherited from the previously selected pulse;
+            // register controls are applied only after this cursor move.
+            InputState& is = score()->inputState();
+            is.setNotes({});
+            is.setNumericPulseRegisterExplicit(false);
+            is.setNumericPulseRegisterOffset(0);
+            notifyAboutStateChanged();
         } else if (shouldSetupInputNote()) {
             const NoteInputState& is = state();
             const staff_idx_t prevStaffIdx = track2staff(is.prevTrack());
@@ -134,6 +144,7 @@ void NotationNoteInput::startNoteInput(NoteInputMethod method, bool focusNotatio
         is.setDuration(Duration(DurationType::V_QUARTER));
         is.setNotes({});
         is.setNumericPulseRegisterExplicit(false);
+        is.setNumericPulseRegisterOffset(0);
     } else if (!d.isValid() || d.isZero() || d.type() == DurationType::V_MEASURE) {
         is.setDuration(Duration(DurationType::V_QUARTER));
     }
@@ -335,6 +346,7 @@ void NotationNoteInput::setupInputNote()
         if (numericPulseProfile(selectedNote->staff(), selectedNote->tick())) {
             is.setNotes({});
             is.setNumericPulseRegisterExplicit(false);
+            is.setNumericPulseRegisterOffset(0);
         } else {
             is.setNotes({ selectedNote->noteVal() });
         }
@@ -645,6 +657,8 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
 
     const Staff* staff = is.staff();
     const Fraction tick = is.tick();
+    int numericRegisterOffset = 0;
+    bool numericRegisterChanged = false;
 
     NoteValList notes;
 
@@ -682,6 +696,8 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
                     continue;
                 }
                 newVal.pitch = targetPitch;
+                numericRegisterOffset = targetRegister;
+                numericRegisterChanged = true;
             } else {
                 newVal.pitch += up ? PITCH_DELTA_OCTAVE : -PITCH_DELTA_OCTAVE;
             }
@@ -717,6 +733,10 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
         notes.push_back(newVal);
     }
 
+    if (numericRegisterChanged) {
+        is.setNumericPulseRegisterOffset(numericRegisterOffset);
+        is.setNumericPulseRegisterExplicit(true);
+    }
     setInputNotes(notes);
 }
 
@@ -741,8 +761,17 @@ void NotationNoteInput::setNumericPulseRegister(int registerOffset)
         return;
     }
 
-    setInputNotes({ NoteInput::noteVal(score(), pitch, is.staffIdx(), false) });
+    const NoteValList notes { NoteInput::noteVal(score(), pitch, is.staffIdx(), false) };
+    const bool notesChanged = is.notes() != notes;
+    // Set the override before changing the input notes. The toolbar observes
+    // the note-input notification and must see the selected register in the
+    // same update that changes the preview pitch.
+    is.setNumericPulseRegisterOffset(registerOffset);
     is.setNumericPulseRegisterExplicit(true);
+    setInputNotes(notes);
+    if (!notesChanged) {
+        notifyAboutStateChanged();
+    }
 }
 
 void NotationNoteInput::setRestMode(bool rest)
