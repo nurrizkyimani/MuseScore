@@ -868,7 +868,36 @@ Ret NoteInput::putNote(Transaction& tx, Score* score, const Position& p, bool re
 
     DirectionV stemDirection = DirectionV::AUTO;
     bool error = false;
-    NoteVal nval = noteValForPosition(score, p, is.accidentalType(), error);
+    NoteVal nval;
+
+    // Numeric-pulse mouse entry chooses the degree from the note-input
+    // toolbar, not from the vertical mouse position.  Converting the
+    // profile's inputStep through a clef here would turn the profile's
+    // centre-register pitches into a lower-register pitch (for example,
+    // inputStep 28 becomes MIDI 48 while degree 1 is MIDI 60).  Build the
+    // note value from the profile pitch and the explicitly selected register
+    // instead, so a normal click always enters the centre register.
+    if (const NumericPulseProfile* numericProfile = numericPulseProfile(st, s->tick());
+        numericProfile && !is.rest()) {
+        const NumericPulseDegree* degree = nullptr;
+        if (!is.notes().empty()) {
+            degree = numericProfile->degreeForPitch(is.notes().front().pitch);
+        }
+        if (!degree && !numericProfile->degrees.empty()) {
+            degree = &numericProfile->degrees.front();
+        }
+
+        const int registerOffset = is.numericPulseRegisterExplicit()
+                                   ? is.numericPulseRegisterOffset()
+                                   : numericProfile->defaultRegister;
+        const int pitch = numericPulsePitch(numericProfile, degree, registerOffset);
+        if (!degree || pitch < 0) {
+            return make_ret(Ret::Code::UnknownError);
+        }
+        nval = noteVal(score, pitch, p.staffIdx, false);
+    } else {
+        nval = noteValForPosition(score, p, is.accidentalType(), error);
+    }
     if (error) {
         return make_ret(Ret::Code::UnknownError);
     }

@@ -500,6 +500,41 @@ TEST(Engraving_GamelanNotationTests, NumericDegreeInputUsesExplicitCenterRegiste
     delete score;
 }
 
+TEST(Engraving_GamelanNotationTests, NumericMouseEntryUsesCenterRegister)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+
+    // Materialize the pulse rests and leave the cursor on the second pulse,
+    // matching a mouse click after the first note has been entered.
+    enterDegree(score, 1);
+    Segment* secondPulse = score->tick2segment(Fraction(1, 4), false, SegmentType::ChordRest);
+    ASSERT_NE(secondPulse, nullptr);
+
+    InputState& inputState = score->inputState();
+    inputState.setSegment(secondPulse);
+    inputState.setNotes({ NoteInput::noteVal(score, 48, 0, false) });
+    inputState.setNumericPulseRegisterExplicit(false);
+    inputState.setNumericPulseRegisterOffset(0);
+
+    Position position;
+    position.segment = secondPulse;
+    position.staffIdx = 0;
+    position.line = 0;
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Mouse numeric entry"),
+                                              [&](Transaction& tx) {
+                                                  NoteInput::putNote(tx, score, position, true);
+                                              });
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(1, 4), 0);
+    ASSERT_NE(chord, nullptr);
+    ASSERT_NE(chord->upNote(), nullptr);
+    EXPECT_EQ(chord->upNote()->pitch(), 60);
+    EXPECT_EQ(numericPulseRegister(numericPulseProfile(chord->staff(), chord->tick()), chord->upNote()->pitch()), 0);
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, SelectingNumericNoteResetsInputDefaults)
 {
     MasterScore* score = makeNumericPulseScore();
