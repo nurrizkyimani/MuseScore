@@ -503,7 +503,7 @@ Note* EditNote::replaceRestWithFirstNumericPulseDegree(Score* score, Rest* rest)
 
 Rest* EditNote::replaceFirstNumericPulseDegreeWithRest(Score* score, Note* note)
 {
-    if (!score || !note || !note->chord() || !note->segment()) {
+    if (!score || !note || !note->chord() || !note->chord()->segment()) {
         return nullptr;
     }
 

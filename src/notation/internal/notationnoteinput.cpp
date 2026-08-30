@@ -676,6 +676,31 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
                 newVal.pitch += up ? PITCH_DELTA_OCTAVE : -PITCH_DELTA_OCTAVE;
             }
             break;
+        case PitchMode::NUMERIC_PULSE: {
+            const NumericPulseProfile* profile = numericPulseProfile(staff, tick);
+            const NumericPulseDegree* currentDegree = profile ? profile->degreeForPitch(val.pitch) : nullptr;
+            if (!currentDegree) {
+                continue;
+            }
+
+            size_t currentIndex = 0;
+            while (currentIndex < profile->degrees.size() && &profile->degrees[currentIndex] != currentDegree) {
+                ++currentIndex;
+            }
+            if (currentIndex == profile->degrees.size()
+                || (up && currentIndex + 1 >= profile->degrees.size())
+                || (!up && currentIndex == 0)) {
+                continue;
+            }
+
+            const size_t targetIndex = up ? currentIndex + 1 : currentIndex - 1;
+            const int registerOffset = numericPulseRegister(profile, val.pitch);
+            const int targetPitch = numericPulsePitch(profile, &profile->degrees[targetIndex], registerOffset);
+            if (targetPitch < 0) {
+                continue;
+            }
+            newVal = NoteInput::noteVal(score(), targetPitch, is.staffIdx(), false);
+        } break;
         }
 
         newVal.pitch = clampPitch(newVal.pitch);
