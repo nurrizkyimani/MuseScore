@@ -115,6 +115,8 @@ TEST(Engraving_GamelanNotationTests, RequestedPelogInstrumentProfilesAreAvailabl
 
         const NumericPulseProfile& profile = instrumentTemplate->numericPulseProfile;
         ASSERT_TRUE(profile.isValid()) << muse::String(expected.instrumentId).toStdString();
+        EXPECT_TRUE(instrumentTemplate->containsGenre(u"common")) << muse::String(expected.instrumentId).toStdString();
+        EXPECT_TRUE(instrumentTemplate->containsGenre(u"world")) << muse::String(expected.instrumentId).toStdString();
         ASSERT_EQ(profile.degrees.size(), expected.degrees.size());
         for (size_t i = 0; i < expected.degrees.size(); ++i) {
             EXPECT_EQ(profile.degrees[i].number, expected.degrees[i]);

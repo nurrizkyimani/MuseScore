@@ -16730,6 +16730,7 @@
                   <Channel>
                         <program value="13"/>
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="saron-slendro">
@@ -16759,6 +16760,7 @@
                   <Channel>
                         <program value="13"/>
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="gender-pelog">
@@ -16795,6 +16797,7 @@
                   <Channel>
                         <program value="11"/> <!--Vibraphone proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="gambang-pelog">
@@ -16831,6 +16834,7 @@
                   <Channel>
                         <program value="13"/> <!--Xylophone proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="rebab-pelog">
@@ -16862,6 +16866,7 @@
                   <Channel>
                         <program value="110"/> <!--Fiddle proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="suling-pelog">
@@ -16893,6 +16898,7 @@
                   <Channel>
                         <program value="73"/> <!--Flute proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="siter-pelog">
@@ -16929,6 +16935,7 @@
                   <Channel>
                         <program value="107"/> <!--Koto proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="gong-kemodong-pelog">
@@ -16955,6 +16962,7 @@
                   <Channel>
                         <program value="14"/> <!--Tubular Bells proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="gong-ageng-pelog">
@@ -16980,6 +16988,7 @@
                   <Channel>
                         <program value="14"/> <!--Tubular Bells proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
             <Instrument id="kempul-pelog">
@@ -17009,6 +17018,7 @@
                   <Channel>
                         <program value="14"/> <!--Tubular Bells proxy-->
                   </Channel>
+                  <genre>common</genre>
                   <genre>world</genre>
             </Instrument>
       </InstrumentGroup>
