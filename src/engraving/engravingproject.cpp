@@ -112,6 +112,14 @@ Ret EngravingProject::setupMasterScore(bool forceMode)
 {
     TRACEFUNC;
 
+    // New-score construction can create full-measure rests before the final
+    // instrument profiles are attached. Normalize them here as well as during
+    // file loading so the input cursor is anchored to real pulse rests.
+    {
+        ScoreLoad scoreLoad;
+        m_masterScore->normalizeNumericPulseMeasureRests();
+    }
+
     m_masterScore->createPaddingTable();
     for (Score* s : m_masterScore->scoreList()) {
         s->createPaddingTable();

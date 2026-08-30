@@ -213,6 +213,7 @@ TEST(Engraving_GamelanNotationTests, RegisterDotsExpandGlyphAndMoveDurationMarks
     EXPECT_LT(upper.top(), plain.top());
     EXPECT_GT(lower.bottom(), plain.bottom());
     EXPECT_LT(rendering::score::numericPulseDurationMarkY(upper, spatium, 0), upper.top());
+    EXPECT_DOUBLE_EQ(rendering::score::numericPulseRegisterDotDiameter(spatium), 0.42 * spatium);
 }
 
 TEST(Engraving_GamelanNotationTests, EmptyPulseDotIsReadableAtNormalScale)
