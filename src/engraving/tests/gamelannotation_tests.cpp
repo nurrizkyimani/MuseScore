@@ -166,6 +166,8 @@ TEST(Engraving_GamelanNotationTests, SlendroProfileRemainsAvailableForCompatibil
     ASSERT_NE(instrumentTemplate, nullptr);
     const NumericPulseProfile& profile = instrumentTemplate->numericPulseProfile;
     ASSERT_TRUE(profile.isValid());
+    EXPECT_TRUE(instrumentTemplate->containsGenre(u"common"));
+    EXPECT_TRUE(instrumentTemplate->containsGenre(u"world"));
     EXPECT_EQ(profile.degrees.size(), 5u);
     EXPECT_EQ(profile.degreeForNumber(1)->inputStep, 28);
     EXPECT_EQ(profile.degreeForNumber(2)->inputStep, 29);
