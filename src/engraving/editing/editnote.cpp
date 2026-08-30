@@ -493,7 +493,13 @@ Note* EditNote::replaceRestWithFirstNumericPulseDegree(Score* score, Rest* rest)
     const NumericPulseDegree& firstDegree = profile->degrees.front();
     Segment* restSegment = rest->segment();
     const track_idx_t track = rest->track();
-    const Fraction duration = rest->durationTypeTicks();
+    // A full-measure rest has a V_MEASURE duration type, whose
+    // durationTypeTicks() is zero. setNoteRest() requires the actual gap
+    // duration, so use the stored measure length for that special case.
+    const Fraction duration = rest->durationType().isMeasure() ? rest->ticks() : rest->durationTypeTicks();
+    if (duration.isZero()) {
+        return nullptr;
+    }
     Segment* segment = score->setNoteRest(restSegment, track, NoteVal(firstDegree.scorePitch), duration, DirectionV::AUTO);
     Chord* chord = segment && segment->element(track) && segment->element(track)->isChord()
                    ? toChord(segment->element(track))

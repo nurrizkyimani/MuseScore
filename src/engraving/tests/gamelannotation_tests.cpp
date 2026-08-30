@@ -415,6 +415,40 @@ TEST(Engraving_GamelanNotationTests, ArrowUpReplacesEmptyPulseWithFirstProfileDe
     delete score;
 }
 
+TEST(Engraving_GamelanNotationTests, ArrowUpReplacesFullMeasureRestWithoutCrashing)
+{
+    MasterScore* score = makeNumericPulseScore(u"saron-pelog");
+    ASSERT_NE(score, nullptr);
+
+    Segment* segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    EngravingItem* item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isRest());
+    Rest* rest = toRest(item);
+    ASSERT_TRUE(rest->durationType().isMeasure());
+    const Fraction originalDuration = rest->ticks();
+    ASSERT_FALSE(originalDuration.isZero());
+    score->select(rest);
+
+    score->startCmd(TranslatableString::untranslatable("Fill full-measure empty pulse"));
+    Note* note = EditNote::replaceRestWithFirstNumericPulseDegree(score, rest);
+    score->endCmd();
+
+    ASSERT_NE(note, nullptr);
+    EXPECT_EQ(note->pitch(), 60);
+    EXPECT_EQ(note->chord()->durationTypeTicks(), originalDuration);
+
+    score->undoRedo(true, nullptr);
+    segment = score->tick2segment(Fraction(0, 1), false, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    item = segment->element(0);
+    ASSERT_NE(item, nullptr);
+    EXPECT_TRUE(item->isRest());
+
+    delete score;
+}
+
 TEST(Engraving_GamelanNotationTests, ArrowDownReplacesFirstProfileDegreeWithEmptyPulse)
 {
     MasterScore* score = makeNumericPulseScore(u"gong-kemodong-pelog");
