@@ -25,6 +25,7 @@
 #include "draw/painter.h"
 
 #include "engraving/dom/staff.h"
+#include "engraving/dom/numericpulseprofile.h"
 
 #include "notation/inotationinteraction.h" // IWYU pragma: keep
 #include "notation/inotationnoteinput.h"
@@ -64,7 +65,9 @@ void NoteInputCursor::paint(muse::draw::Painter* painter)
     const double spatium = staffType->spatium();
     const int leftLineWidth = 0.14 * spatium;
 
-    const RectF leftLine(cursorRect.topLeft().x(), cursorRect.topLeft().y(), leftLineWidth, cursorRect.height());
+    const bool numericPulse = numericPulseProfile(state.staff(), state.tick()) != nullptr;
+    const double leftLineX = numericPulse ? cursorRect.center().x() - leftLineWidth * 0.5 : cursorRect.topLeft().x();
+    const RectF leftLine(leftLineX, cursorRect.topLeft().y(), leftLineWidth, cursorRect.height());
     const Color lineColor = fillColor;
     painter->fillRect(leftLine, lineColor);
 

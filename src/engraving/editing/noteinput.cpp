@@ -570,6 +570,11 @@ void NoteInput::addRest(Transaction& tx, Score* score)
         return;
     }
 
+    if (numericPulseProfile(is.staff(), is.tick())
+        && is.duration().type() == DurationType::V_QUARTER) {
+        score->normalizeNumericPulseMeasureRests();
+    }
+
     score->expandVoice(is.segment(), is.track());
 
     // The numeric-pulse cursor may sit inside a longer rest without having a
@@ -784,6 +789,16 @@ std::pair<Note*, Note*> NoteInput::repitchReplaceNote(Transaction&, Score* score
 
 Ret NoteInput::putNote(Transaction& tx, Score* score, const PointF& pos, bool replace, bool insert)
 {
+    const InputState& currentInputState = score->inputState();
+    if (numericPulseProfile(currentInputState.staff(), currentInputState.tick())
+        && currentInputState.duration().type() == DurationType::V_QUARTER) {
+        // Empty numeric measures are rendered as virtual pulse dots until a
+        // real quarter-pulse rest exists at each tick. Materialize those
+        // rests before hit-testing so a click on any dot resolves to that
+        // pulse instead of falling back to the measure start.
+        score->normalizeNumericPulseMeasureRests();
+    }
+
     Position p;
     if (!score->getPosition(&p, pos, score->inputState().voice())) {
         LOGD("cannot put note here, get position failed");
@@ -1307,6 +1322,9 @@ void NoteInput::addPitch(Transaction& tx, Score* score, const NoteInputParams& p
         const NumericPulseDegree* degree = numericProfile ? numericProfile->degreeForNumber(params.numericDegree) : nullptr;
         if (!degree) {
             return;
+        }
+        if (is.duration().type() == DurationType::V_QUARTER) {
+            score->normalizeNumericPulseMeasureRests();
         }
         is.setVoice(0);
         int registerOffset = numericProfile->defaultRegister;
