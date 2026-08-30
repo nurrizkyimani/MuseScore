@@ -218,9 +218,9 @@ void NoteInputBarModel::load()
             const char* description;
         };
         static const NumericRegisterAction registerActions[] = {
-            { -1, u"\u2193 \u2022", "Lower register" },
+            { -1, u"\u2193\u2022", "Lower register" },
             { 0, u"1", "Center register" },
-            { 1, u"\u2191 \u2022", "Upper register" }
+            { 1, u"\u2191\u2022", "Upper register" }
         };
         for (const NumericRegisterAction& definition : registerActions) {
             const ActionCode code = "numeric-register-" + std::to_string(definition.registerOffset);
@@ -363,13 +363,31 @@ void NoteInputBarModel::handleMenuItem(const QString& itemId)
     if (usesNumericProfile && (selectNumericDegree || numericDuration || enterEmptyPulse)) {
         INotationNoteInputPtr noteInput = interaction ? interaction->noteInput() : nullptr;
         if (noteInput) {
-            if (!noteInput->isNoteInputMode()) {
+            const bool startingNumericInput = !noteInput->isNoteInputMode();
+            const bool switchingToNumericInput = !noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+            if (startingNumericInput) {
                 // Numeric buttons are direct event-entry controls. Do not inherit
                 // MuseScore's configurable Western BY_DURATION default, where the
                 // first degree only primes a pitch and Rest only toggles rest mode.
                 noteInput->startNoteInput(NoteInputMethod::BY_NOTE_NAME);
-            } else if (!noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+            } else if (switchingToNumericInput) {
                 noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+            }
+
+            const engraving::DurationType duration = noteInput->state().duration().type();
+            const bool validNumericDuration = duration == engraving::DurationType::V_QUARTER
+                                              || duration == engraving::DurationType::V_EIGHTH
+                                              || duration == engraving::DurationType::V_16TH;
+            if (!validNumericDuration) {
+                // One numeric pulse in the current 4/4 workflow is a quarter note.
+                // Never inherit a whole-note duration from a selected measure rest.
+                noteInput->setDuration(engraving::DurationType::V_QUARTER);
+            }
+            if (startingNumericInput || switchingToNumericInput || !validNumericDuration) {
+                // A selected Western note or an earlier score can leave an octave
+                // pitch in InputState. Numeric entry must begin at the profile's
+                // center register until the user explicitly chooses another one.
+                noteInput->setNumericPulseRegister(numericProfile->defaultRegister);
             }
         }
     }

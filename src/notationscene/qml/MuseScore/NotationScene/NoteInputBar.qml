@@ -148,8 +148,11 @@ Item {
                                                          && Boolean(item)
                                                          && item.section.startsWith("numeric-")
                                                          && (item.section === "numeric-degree"
+                                                             || item.section === "numeric-register"
                                                              || numericPulseLabels[item.id] !== undefined)
-            readonly property string numericPulseLabel: item && item.section === "numeric-degree"
+            readonly property string numericPulseLabel: item
+                                                         && (item.section === "numeric-degree"
+                                                             || item.section === "numeric-register")
                                                          ? item.title
                                                          : numericPulseLabels[item.id] || ""
 
