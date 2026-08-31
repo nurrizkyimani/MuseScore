@@ -20,6 +20,7 @@
 #include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/slur.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/editing/edittie.h"
@@ -532,6 +533,41 @@ TEST(Engraving_GamelanNotationTests, NumericMouseEntryUsesCenterRegister)
     EXPECT_EQ(chord->upNote()->pitch(), 60);
     EXPECT_EQ(numericPulseRegister(numericPulseProfile(chord->staff(), chord->tick()), chord->upNote()->pitch()), 0);
 
+    delete score;
+}
+
+TEST(Engraving_GamelanNotationTests, NumericEntryDoesNotExtendPendingZeroLengthSlur)
+{
+    MasterScore* score = makeNumericPulseScore();
+    ASSERT_NE(score, nullptr);
+
+    enterDegree(score, 1);
+    Segment* secondPulse = score->tick2segment(Fraction(1, 4), false, SegmentType::ChordRest);
+    ASSERT_NE(secondPulse, nullptr);
+    Rest* rest = toRest(secondPulse->element(0));
+    ASSERT_NE(rest, nullptr);
+
+    InputState& inputState = score->inputState();
+    inputState.setSegment(secondPulse);
+    Slur* pendingSlur = nullptr;
+    Position position;
+    position.segment = secondPulse;
+    position.staffIdx = 0;
+    position.line = 0;
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Numeric entry with pending slur"),
+                                              [&](Transaction& tx) {
+                                                  pendingSlur = score->addSlur(rest, rest, nullptr);
+                                                  inputState.setSlur(pendingSlur);
+                                                  NoteInput::putNote(tx, score, position, true);
+                                              });
+
+    Chord* chord = score->firstMeasure()->findChord(Fraction(1, 4), 0);
+    ASSERT_NE(chord, nullptr);
+    EXPECT_EQ(chord->upNote()->pitch(), 60);
+    ASSERT_NE(pendingSlur, nullptr);
+    EXPECT_TRUE(pendingSlur->ticks().isZero());
+
+    inputState.setSlur(nullptr);
     delete score;
 }
 
