@@ -37,8 +37,111 @@ static const PlaybackSetupData PIANO_SETUP_DATA = {
     SoundId::Piano, SoundCategory::Keyboards
 };
 
+static bool resolveGamelanSetupData(const Instrument* instrument, PlaybackSetupData& result)
+{
+    const std::string instrumentId = instrument->id().toStdString();
+
+    if (instrumentId == "gender-pelog") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions, { SoundSubCategory::Orff } };
+        return true;
+    }
+    if (instrumentId == "gambang-pelog") {
+        result = { SoundId::Xylophone, SoundCategory::Percussions, { SoundSubCategory::Wooden } };
+        return true;
+    }
+    if (instrumentId == "siter-pelog") {
+        result = { SoundId::Sitar, SoundCategory::Strings, { SoundSubCategory::Plucked } };
+        return true;
+    }
+    if (instrumentId == "suling-pelog") {
+        result = { SoundId::Flute, SoundCategory::Winds };
+        return true;
+    }
+    if (instrumentId == "bonang-barung-pelog") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions, { SoundSubCategory::Metal } };
+        return true;
+    }
+    if (instrumentId == "selompret-pelog") {
+        result = { SoundId::Shawm, SoundCategory::Winds, { SoundSubCategory::Reed } };
+        return true;
+    }
+    if (instrumentId == "saron-pelog") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Orchestral } };
+        return true;
+    }
+    if (instrumentId == "saron-slendro") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Orchestral,
+                     SoundSubCategory::Temple } };
+        return true;
+    }
+    if (instrumentId == "bonang-penerus-pelog" || instrumentId == "bonang-penerus-slendro") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal } };
+        return true;
+    }
+    if (instrumentId == "gender-penerus-pelog" || instrumentId == "gender-penerus-slendro") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Orff } };
+        return true;
+    }
+    if (instrumentId == "gender-slenthem-pelog" || instrumentId == "gender-slenthem-slendro") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal } };
+        return true;
+    }
+    if (instrumentId == "saron-peking-pelog" || instrumentId == "saron-peking-slendro"
+        || instrumentId == "saron-demung-pelog" || instrumentId == "saron-demung-slendro") {
+        result = { SoundId::Metallophone, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Orchestral } };
+        return true;
+    }
+    if (instrumentId == "kenong-pelog" || instrumentId == "kenong-slendro"
+        || instrumentId == "kethuk-pelog" || instrumentId == "kethuk-slendro"
+        || instrumentId == "kempyang-pelog" || instrumentId == "kempyang-slendro"
+        || instrumentId == "gong-suwukan-pelog") {
+        result = { SoundId::Gong, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Temple } };
+        return true;
+    }
+    if (instrumentId == "kendhang-ketipung" || instrumentId == "kendhang-ciblon"
+        || instrumentId == "kendhang-gendhing") {
+        result = { SoundId::Drum, SoundCategory::Percussions };
+        return true;
+    }
+    if (instrumentId == "gong-kemodong-pelog") {
+        result = { SoundId::Gong, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Orff } };
+        return true;
+    }
+    if (instrumentId == "gong-ageng-pelog") {
+        result = { SoundId::Gong, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Orchestral } };
+        return true;
+    }
+    if (instrumentId == "kempul-pelog") {
+        result = { SoundId::Gong, SoundCategory::Percussions,
+                   { SoundSubCategory::Metal, SoundSubCategory::Temple } };
+        return true;
+    }
+    if (instrumentId == "rebab-pelog") {
+        result = { SoundId::Violin, SoundCategory::Strings,
+                   { SoundSubCategory::Orchestral, SoundSubCategory::Japanese } };
+        return true;
+    }
+
+    return false;
+}
+
 void PlaybackSetupDataResolver::resolveSetupData(const Instrument* instrument, PlaybackSetupData& result) const
 {
+    if (resolveGamelanSetupData(instrument, result)) {
+        result.supportsSingleNoteDynamics = instrument->singleNoteDynamics();
+        result.musicXmlSoundId = std::make_optional(instrument->musicXmlId().toStdString());
+        return;
+    }
+
     if (!instrument->soundId().empty()) {
         result = PlaybackSetupData::fromString(instrument->soundId());
         result.supportsSingleNoteDynamics = instrument->singleNoteDynamics();
