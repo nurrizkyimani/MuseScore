@@ -70,6 +70,13 @@ static AudioOutputParams makeReverbOutputParams()
     return result;
 }
 
+static bool resourceMatchesSetup(const AudioResourceMeta& resourceMeta, const muse::mpe::PlaybackSetupData& setupData)
+{
+    const muse::String& resourceSetupData = resourceMeta.attributeVal(PLAYBACK_SETUP_DATA_ATTRIBUTE);
+    return !resourceSetupData.empty()
+           && muse::mpe::PlaybackSetupData::fromString(resourceSetupData) == setupData;
+}
+
 static std::string resolveAuxTrackTitle(aux_channel_idx_t index, const AudioOutputParams& params, bool considerFx = true)
 {
     if (considerFx && params.fxChain.size() == 1) {
@@ -1195,7 +1202,7 @@ void PlaybackController::addTrack(const InstrumentTrackId& instrumentTrackId, co
 }
 
 void PlaybackController::doAddTrack(const InstrumentTrackId& instrumentTrackId, const std::string& title,
-                                    const TrackAddFinished& onFinished)
+                                    const TrackAddFinished& onFinished, unsigned resourceRetryCount)
 {
     IF_ASSERT_FAILED(notationPlayback() && playback()) {
         return;
@@ -1216,13 +1223,37 @@ void PlaybackController::doAddTrack(const InstrumentTrackId& instrumentTrackId, 
 
     bool isMetronome = notationPlayback()->metronomeTrackId() == instrumentTrackId;
 
-    if (!inParams.isValid()) {
+    const bool currentResourceMatches = inParams.isValid()
+                                        && resourceMatchesSetup(inParams.resourceMeta, playbackData.setupData);
+
+    if (!currentResourceMatches) {
         if (isMetronome) {
             const SoundProfile& profile = profilesRepo()->profile(configuration()->basicSoundProfileName());
             inParams = { profile.findResource(playbackData.setupData), {} };
         } else {
             const SoundProfile& profile = profilesRepo()->profile(audioSettings()->activeSoundProfile());
             inParams = { profile.findResource(playbackData.setupData), {} };
+        }
+
+        const std::string instrumentId = instrumentTrackId.instrumentId.toStdString();
+        const bool isGamelanTrack = instrumentId.find("-pelog") != std::string::npos
+                                    || instrumentId.find("-slendro") != std::string::npos
+                                    || instrumentId.find("kendhang-") != std::string::npos;
+        if (isGamelanTrack && !inParams.isValid() && resourceRetryCount < 3) {
+            const uint64_t retryPlaybackKey = notationPlaybackKey();
+            playback()->availableInputResources().onResolve(this,
+                [this, instrumentTrackId, title, onFinished, retryPlaybackKey, resourceRetryCount](
+                    const AudioResourceMetaList&) {
+                if (notationPlaybackKey() != retryPlaybackKey) {
+                    onFinished();
+                    return;
+                }
+
+                doAddTrack(instrumentTrackId, title, onFinished, resourceRetryCount + 1);
+            }).onReject(this, [onFinished](int, const std::string&) {
+                onFinished();
+            });
+            return;
         }
     }
 
