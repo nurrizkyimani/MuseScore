@@ -529,7 +529,12 @@ void ScoreAutomationController::addHairpinPoints(const Hairpin* hairpin, int tic
         }
     }
 
-    IF_ASSERT_FAILED(info.from < info.to) {
+    // Older scores can contain a hairpin whose effective end is at or before
+    // its start (for example, a hairpin attached to a compound dynamic). Do
+    // not abort score loading for malformed playback automation; the notation
+    // itself is still valid and the hairpin can remain visible in the score.
+    if (info.from >= info.to) {
+        LOGW() << "Skipping invalid zero-length hairpin automation";
         return;
     }
 

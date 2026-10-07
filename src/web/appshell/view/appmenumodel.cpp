@@ -257,8 +257,156 @@ MenuItem* AppMenuModel::makeToolsMenu()
         makeMenuItem("join-measures")
     };
 
+    MenuItemList kepatihan81meddiversityItems {
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-1-med-diversity-selompret")
+    };
+
+    MenuItemList kepatihan82meddiversityItems {
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-2-med-diversity-selompret")
+    };
+
+    MenuItemList kepatihan83meddiversityItems {
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-3-med-diversity-selompret")
+    };
+
+    MenuItemList kepatihan84meddiversityItems {
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-4-med-diversity-selompret")
+    };
+
+    MenuItemList kepatihan81maxuniformityItems {
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-1-max-uniformity-selompret")
+    };
+
+    MenuItemList kepatihan82maxuniformityItems {
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-2-max-uniformity-selompret")
+    };
+
+    MenuItemList kepatihan83maxuniformityItems {
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-3-max-uniformity-selompret")
+    };
+
+    MenuItemList kepatihan84maxuniformityItems {
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-gambang"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-suling"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-siter"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-rebab"),
+        makeMenuItem("convert-to-kepatihan-8-4-max-uniformity-selompret")
+    };
+
+    MenuItemList kepatihan71maxdiversityItems {
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-7-1-max-diversity-selompret")
+    };
+
+    MenuItemList kepatihan72maxdiversityItems {
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-7-2-max-diversity-selompret")
+    };
+
+    MenuItemList kepatihan73maxdiversityItems {
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-7-3-max-diversity-selompret")
+    };
+
+    MenuItemList kepatihan74maxdiversityItems {
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-gender-barung"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-gender-panerus"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-gong-kemodong"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-gambang"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-suling"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-siter"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-rebab"),
+        makeMenuItem("convert-to-kepatihan-7-4-max-diversity-selompret")
+    };
+
+    MenuItemList kepatihanItems {
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.1 Med Diversity"), kepatihan81meddiversityItems, "menu-kepatihan-8-1-med-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.2 Med Diversity"), kepatihan82meddiversityItems, "menu-kepatihan-8-2-med-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.3 Med Diversity"), kepatihan83meddiversityItems, "menu-kepatihan-8-3-med-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.4 Med Diversity"), kepatihan84meddiversityItems, "menu-kepatihan-8-4-med-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.1 Max Uniformity"), kepatihan81maxuniformityItems, "menu-kepatihan-8-1-max-uniformity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.2 Max Uniformity"), kepatihan82maxuniformityItems, "menu-kepatihan-8-2-max-uniformity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.3 Max Uniformity"), kepatihan83maxuniformityItems, "menu-kepatihan-8-3-max-uniformity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 8.4 Max Uniformity"), kepatihan84maxuniformityItems, "menu-kepatihan-8-4-max-uniformity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 7.1 Max Diversity"), kepatihan71maxdiversityItems, "menu-kepatihan-7-1-max-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 7.2 Max Diversity"), kepatihan72maxdiversityItems, "menu-kepatihan-7-2-max-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 7.3 Max Diversity"), kepatihan73maxdiversityItems, "menu-kepatihan-7-3-max-diversity"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Tuning 7.4 Max Diversity"), kepatihan74maxdiversityItems, "menu-kepatihan-7-4-max-diversity")
+    };
+
     MenuItemList toolsItems {
         makeMenuItem("transpose"),
+        makeMenu(TranslatableString("appshell/menu/tools", "Kepatihan tuning"), kepatihanItems, "menu-kepatihan-tuning"),
         makeSeparator(),
         makeMenuItem("explode"),
         makeMenuItem("implode"),

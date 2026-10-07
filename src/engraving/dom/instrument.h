@@ -284,6 +284,11 @@ public:
     const String& id() const { return m_id; }
     const String& soundId() const { return m_soundId; }
     void setSoundId(const String& id) { m_soundId = id; }
+    // Optional notation-only profile. This deliberately does not change the
+    // instrument id, so existing playback/audio-track assignments remain
+    // attached to the original instrument.
+    const String& numericPulseProfileId() const { return m_numericPulseProfileId; }
+    void setNumericPulseProfileId(const String& id) { m_numericPulseProfileId = id; }
     String family() const;
     String group() const;
     void setId(const String& id) { m_id = id; }
@@ -382,6 +387,7 @@ private:
     String m_trackName;
     String m_id;
     String m_soundId;
+    String m_numericPulseProfileId;
 
     int m_minPitchA = 0;
     int m_maxPitchA = 0;

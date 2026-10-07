@@ -441,6 +441,13 @@ void TDraw::draw(const Accidental* item, Painter* painter, const PaintOptions& o
         return;
     }
 
+    // Numeric-pulse notation derives its symbol from the note's pitch. The
+    // Western accidental attached to the source note must not be rendered as
+    // an extra flat/sharp beside the numeric degree.
+    if (item->note() && numericPulseProfile(item->note()->staff(), item->note()->tick())) {
+        return;
+    }
+
     painter->setPen(item->curColor(opt));
     for (const Accidental::LayoutData::Sym& e : item->ldata()->syms) {
         item->drawSymbol(e.sym, painter, PointF(e.x, e.y));

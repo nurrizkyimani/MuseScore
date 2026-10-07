@@ -27,6 +27,7 @@
 
 #include "modularity/ioc.h"
 #include "notation/notationtypes.h"
+#include "notation/iinstrumentsrepository.h"
 #include "project/iprojectcreator.h"
 #include "project/inotationwritersregister.h"
 #include "context/iglobalcontext.h"
@@ -39,6 +40,7 @@ class ConverterController : public IConverterController, public muse::Contextabl
 {
     muse::GlobalInject<project::IProjectCreator> notationCreator;
     muse::GlobalInject<project::INotationWritersRegister> writers;
+    muse::GlobalInject<notation::IInstrumentsRepository> instrumentsRepository;
     muse::ContextInject<context::IGlobalContext> globalContext = { this };
     muse::ContextInject<muse::extensions::IExtensionsProvider> extensionsProvider = { this };
 
@@ -49,6 +51,7 @@ public:
     muse::Ret fileConvert(const muse::io::path_t& in, const muse::io::path_t& out, const OpenParams& openParams = {},
                           const muse::String& soundProfile = {}, const muse::io::path_t& tracksDiffPath = {},
                           const muse::UriQuery& extensionUri = {}, const std::string& transposeOptionsJson = {},
+                          const muse::String& gamelanInstrumentId = {},
                           const std::optional<ConvertTarget>& target = std::nullopt) override;
 
     muse::Ret batchConvert(const muse::io::path_t& batchJobFile, const OpenParams& openParams = {}, const muse::String& soundProfile = {},
@@ -97,6 +100,7 @@ private:
     muse::Ret convertFile(const muse::io::path_t& in, const muse::io::path_t& out, const OpenParams& openParams = {},
                           const muse::String& soundProfile = {}, const muse::io::path_t& tracksDiffPath = {},
                           const muse::UriQuery& extensionUri = {}, const TransposeOpts& transposeOptions = std::nullopt,
+                          const muse::String& gamelanInstrumentId = {},
                           const std::optional<ConvertTarget>& target = std::nullopt, const std::vector<size_t>& visibleParts = {},
                           const CopyrightInfo& copyright = {});
 

@@ -17100,6 +17100,390 @@
             </Instrument>
             </Instrument>
             SLENDRO_DISABLED_END -->
+            <Instrument id="gender-barung-tuning-8-1-med-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-1-med-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.1 Med Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 8.1 Med Diversity</longName>
+                  <shortName>GBarung 8.1 Med Div</shortName>
+                  <description>Gendèr Barung using the Tuning 8.1 Med Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-1-med-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="63" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="70" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-85</aPitchRange>
+                  <pPitchRange>62-85</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-2-med-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-2-med-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.2 Med Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 8.2 Med Diversity</longName>
+                  <shortName>GBarung 8.2 Med Div</shortName>
+                  <description>Gendèr Barung using the Tuning 8.2 Med Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-2-med-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="64" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="72" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>64-85</aPitchRange>
+                  <pPitchRange>64-85</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-3-med-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-3-med-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.3 Med Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 8.3 Med Diversity</longName>
+                  <shortName>GBarung 8.3 Med Div</shortName>
+                  <description>Gendèr Barung using the Tuning 8.3 Med Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-3-med-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="67" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="70" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-86</aPitchRange>
+                  <pPitchRange>62-86</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-4-med-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-4-med-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.4 Med Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 8.4 Med Diversity</longName>
+                  <shortName>GBarung 8.4 Med Div</shortName>
+                  <description>Gendèr Barung using the Tuning 8.4 Med Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-4-med-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="64" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="68" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="70" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>64-93</aPitchRange>
+                  <pPitchRange>64-93</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-7-1-max-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-7-1-max-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 7.1 Max Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 7.1 Max Diversity</longName>
+                  <shortName>GBarung 7.1 Max Div</shortName>
+                  <description>Gendèr Barung using the Tuning 7.1 Max Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-7-1-max-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="68" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="69" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="72" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-74</aPitchRange>
+                  <pPitchRange>62-74</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-7-2-max-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-7-2-max-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 7.2 Max Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 7.2 Max Diversity</longName>
+                  <shortName>GBarung 7.2 Max Div</shortName>
+                  <description>Gendèr Barung using the Tuning 7.2 Max Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-7-2-max-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="63" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="68" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="71" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>63-75</aPitchRange>
+                  <pPitchRange>63-75</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-7-3-max-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-7-3-max-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 7.3 Max Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 7.3 Max Diversity</longName>
+                  <shortName>GBarung 7.3 Max Div</shortName>
+                  <description>Gendèr Barung using the Tuning 7.3 Max Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-7-3-max-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="64" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="66" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="69" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="70" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="72" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>64-78</aPitchRange>
+                  <pPitchRange>64-78</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-7-4-max-diversity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-7-4-max-diversity</soundId>
+                  <trackName>Gendèr Barung Tuning 7.4 Max Diversity</trackName>
+                  <longName>Gendèr Barung Tuning 7.4 Max Diversity</longName>
+                  <shortName>GBarung 7.4 Max Div</shortName>
+                  <description>Gendèr Barung using the Tuning 7.4 Max Diversity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-7-4-max-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="68" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="69" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-81</aPitchRange>
+                  <pPitchRange>62-81</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-1-max-uniformity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-1-max-uniformity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.1 Max Uniformity</trackName>
+                  <longName>Gendèr Barung Tuning 8.1 Max Uniformity</longName>
+                  <shortName>GBarung 8.1 Max Uni</shortName>
+                  <description>Gendèr Barung using the Tuning 8.1 Max Uniformity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-1-max-uniformity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="63" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="65" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="66" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="68" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="70" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-74</aPitchRange>
+                  <pPitchRange>62-74</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-2-max-uniformity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-2-max-uniformity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.2 Max Uniformity</trackName>
+                  <longName>Gendèr Barung Tuning 8.2 Max Uniformity</longName>
+                  <shortName>GBarung 8.2 Max Uni</shortName>
+                  <description>Gendèr Barung using the Tuning 8.2 Max Uniformity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-2-max-uniformity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="65" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="66" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="68" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="71" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>65-76</aPitchRange>
+                  <pPitchRange>65-76</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-3-max-uniformity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-3-max-uniformity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.3 Max Uniformity</trackName>
+                  <longName>Gendèr Barung Tuning 8.3 Max Uniformity</longName>
+                  <shortName>GBarung 8.3 Max Uni</shortName>
+                  <description>Gendèr Barung using the Tuning 8.3 Max Uniformity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-3-max-uniformity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="66" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="67" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="70" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="72" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-76</aPitchRange>
+                  <pPitchRange>62-76</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="gender-barung-tuning-8-4-max-uniformity">
+                  <family>gamelan</family>
+                  <soundId>percussions.gender-barung-tuning-8-4-max-uniformity</soundId>
+                  <trackName>Gendèr Barung Tuning 8.4 Max Uniformity</trackName>
+                  <longName>Gendèr Barung Tuning 8.4 Max Uniformity</longName>
+                  <shortName>GBarung 8.4 Max Uni</shortName>
+                  <description>Gendèr Barung using the Tuning 8.4 Max Uniformity numeric notation.</description>
+                  <musicXMLid>pitched-percussion.metallophone</musicXMLid>
+                  <numericPulse id="gender-barung-tuning-8-4-max-uniformity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="63" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="69" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="70" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="72" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>63-76</aPitchRange>
+                  <pPitchRange>63-76</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="11"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
             <Instrument id="gender-pelog">
                   <family>gamelan</family>
                   <soundId>percussions.metallophone.orff</soundId>
@@ -17238,6 +17622,70 @@
                   <singleNoteDynamics>0</singleNoteDynamics>
                   <Channel>
                         <program value="13"/> <!--Xylophone proxy-->
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="rebab-tuning-8-1-med-diversity">
+                  <family>gamelan</family>
+                  <soundId>strings.rebab-tuning-8-1-med-diversity</soundId>
+                  <trackName>Rebab Tuning 8.1 Med Diversity</trackName>
+                  <longName>Rebab Tuning 8.1 Med Diversity</longName>
+                  <shortName>Rbb 8.1 Med Div</shortName>
+                  <description>Rebab using the Tuning 8.1 Med Diversity numeric notation.</description>
+                  <musicXMLid>strings.rebab</musicXMLid>
+                  <numericPulse id="rebab-tuning-8-1-med-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="63" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="69" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="70" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="73" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-74</aPitchRange>
+                  <pPitchRange>62-74</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="110"/>
+                  </Channel>
+                  <genre>common</genre>
+                  <genre>world</genre>
+            </Instrument>
+            <Instrument id="rebab-tuning-7-1-max-diversity">
+                  <family>gamelan</family>
+                  <soundId>strings.rebab-tuning-7-1-max-diversity</soundId>
+                  <trackName>Rebab Tuning 7.1 Max Diversity</trackName>
+                  <longName>Rebab Tuning 7.1 Max Diversity</longName>
+                  <shortName>Rbb 7.1 Max Div</shortName>
+                  <description>Rebab using the Tuning 7.1 Max Diversity numeric notation.</description>
+                  <musicXMLid>strings.rebab</musicXMLid>
+                  <numericPulse id="rebab-tuning-7-1-max-diversity">
+                        <fixedBaseline>1</fixedBaseline>
+                        <monophonic>1</monophonic>
+                        <showEmptyPulses>1</showEmptyPulses>
+                        <durationMarksAbove>1</durationMarksAbove>
+                        <degree number="1" pitch="62" inputStep="28" inputIndex="0" action="note-c">1</degree>
+                        <degree number="2" pitch="65" inputStep="29" inputIndex="1" action="note-d">2</degree>
+                        <degree number="3" pitch="66" inputStep="30" inputIndex="2" action="note-e">3</degree>
+                        <degree number="4" pitch="68" inputStep="31" inputIndex="3" action="note-f">4</degree>
+                        <degree number="5" pitch="69" inputStep="32" inputIndex="4" action="note-g">5</degree>
+                        <degree number="6" pitch="72" inputStep="33" inputIndex="5" action="note-a">6</degree>
+                  </numericPulse>
+                  <stafftype staffTypePreset="stdNumericPulse">pitched</stafftype>
+                  <clef>G</clef>
+                  <barlineSpan>1</barlineSpan>
+                  <aPitchRange>62-74</aPitchRange>
+                  <pPitchRange>62-74</pPitchRange>
+                  <singleNoteDynamics>0</singleNoteDynamics>
+                  <Channel>
+                        <program value="110"/>
                   </Channel>
                   <genre>common</genre>
                   <genre>world</genre>

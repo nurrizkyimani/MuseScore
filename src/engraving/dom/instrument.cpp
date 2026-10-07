@@ -74,6 +74,7 @@ Instrument::Instrument(const Instrument& i)
 {
     m_id           = i.m_id;
     m_soundId      = i.m_soundId;
+    m_numericPulseProfileId = i.m_numericPulseProfileId;
     m_instrumentLabel = i.m_instrumentLabel;
     m_trackName    = i.m_trackName;
     m_minPitchA    = i.m_minPitchA;
@@ -107,6 +108,7 @@ void Instrument::operator=(const Instrument& i)
 
     m_id           = i.m_id;
     m_soundId      = i.m_soundId;
+    m_numericPulseProfileId = i.m_numericPulseProfileId;
     m_instrumentLabel = i.m_instrumentLabel;
     m_trackName    = i.m_trackName;
     m_minPitchA    = i.m_minPitchA;
@@ -811,6 +813,7 @@ bool Instrument::operator==(const Instrument& i) const
     equal &= i.m_trackName == m_trackName;
     equal &= i.m_id == m_id;
     equal &= i.m_soundId == m_soundId;
+    equal &= i.m_numericPulseProfileId == m_numericPulseProfileId;
     equal &= i.m_musicXmlId == m_musicXmlId;
 
     equal &= i.m_minPitchA == m_minPitchA;

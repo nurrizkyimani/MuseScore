@@ -76,7 +76,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         REWIND_COMMAND,
         TranslatableString("playback", "Rewind"),
         TranslatableString("playback", "Rewind"),
-        InputSchema({ { "position", Arg(DataType::Float, u"Playback position in seconds", Val(0)) } }),
+        InputSchema{ { { "position", Arg(DataType::Float, u"Playback position in seconds", Val(0)) } } },
         Decoration(IconCode::Code::REWIND)
     },
     CommandInfo{

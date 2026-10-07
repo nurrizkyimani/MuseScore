@@ -41,6 +41,66 @@ static bool resolveGamelanSetupData(const Instrument* instrument, PlaybackSetupD
 {
     const std::string instrumentId = instrument->id().toStdString();
 
+    // Bundled Gamelan SoundFonts use a dedicated setup id so they can be
+    // selected automatically instead of sharing the generic FluidSynth
+    // resource used by orchestral instruments.
+    if (instrumentId == "gender-barung-tuning-8-1-med-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-1-med-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-2-med-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-2-med-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-3-med-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-3-med-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-4-med-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-4-med-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-1-max-uniformity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-1-max-uniformity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "rebab-tuning-8-1-med-diversity") {
+        result = PlaybackSetupData(String(u"rebab-tuning-8-1-med-diversity"), SoundCategory::Strings);
+        return true;
+    }
+    if (instrumentId == "rebab-tuning-7-1-max-diversity") {
+        result = PlaybackSetupData(String(u"rebab-tuning-7-1-max-diversity"), SoundCategory::Strings);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-2-max-uniformity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-2-max-uniformity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-3-max-uniformity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-3-max-uniformity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-8-4-max-uniformity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-8-4-max-uniformity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-7-1-max-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-7-1-max-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-7-2-max-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-7-2-max-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-7-3-max-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-7-3-max-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+    if (instrumentId == "gender-barung-tuning-7-4-max-diversity") {
+        result = PlaybackSetupData(String(u"gender-barung-tuning-7-4-max-diversity"), SoundCategory::Percussions);
+        return true;
+    }
+
     if (instrumentId == "gender-pelog") {
         result = { SoundId::Metallophone, SoundCategory::Percussions, { SoundSubCategory::Orff } };
         return true;

@@ -83,6 +83,10 @@ __pycache__/
 src/braille/thirdparty/liblouis/liblouis/config.h
 src/braille/thirdparty/liblouis/liblouis/liblouis.h
 
+# Generated/local Gamelan SoundFonts are large binary assets. Keep them out of
+# Git unless the repository is configured with Git LFS.
+/soundfont/*.sf2
+
 # User overrides of SetupBuildEnvironment
 /buildscripts/cmake/SetupBuildEnvironment.user.cmake
 

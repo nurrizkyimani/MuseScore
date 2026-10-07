@@ -24,12 +24,15 @@
 
 #include <QGuiApplication>
 
+#include "async/notifylist.h"
 #include "global/io/file.h"
 #include "global/translation.h"
 
 #include "engraving/dom/harmony.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/sig.h"
@@ -40,6 +43,7 @@
 
 #include "notation/inotationautomation.h" // IWYU pragma: keep
 #include "notation/inotationelements.h"
+#include "notation/inotationparts.h"
 #include "notation/inotationmidiinput.h"
 #include "notation/inotationnoteinput.h"
 #include "notation/inotationplayback.h" // IWYU pragma: keep
@@ -392,6 +396,52 @@ void NotationActionController::init()
     registerAction("edit-strings", &Controller::openEditStringsDialog);
     registerAction("measures-per-system", &Controller::openBreaksDialog);
     registerAction("transpose", &Controller::openTransposeDialog);
+    registerAction("convert-to-gamelan", &Controller::convertToGamelan);
+    struct KepatihanTuningOption {
+        const char* suffix;
+        const char* profileId;
+        const char16_t* label;
+    };
+    static const KepatihanTuningOption kepatihanTunings[] {
+        { "8-1-med-diversity", "kepatihan-tuning-8-1-med-diversity", u"Tuning 8.1 Med Diversity" },
+        { "8-2-med-diversity", "kepatihan-tuning-8-2-med-diversity", u"Tuning 8.2 Med Diversity" },
+        { "8-3-med-diversity", "kepatihan-tuning-8-3-med-diversity", u"Tuning 8.3 Med Diversity" },
+        { "8-4-med-diversity", "kepatihan-tuning-8-4-med-diversity", u"Tuning 8.4 Med Diversity" },
+        { "8-1-max-uniformity", "kepatihan-tuning-8-1-max-uniformity", u"Tuning 8.1 Max Uniformity" },
+        { "8-2-max-uniformity", "kepatihan-tuning-8-2-max-uniformity", u"Tuning 8.2 Max Uniformity" },
+        { "8-3-max-uniformity", "kepatihan-tuning-8-3-max-uniformity", u"Tuning 8.3 Max Uniformity" },
+        { "8-4-max-uniformity", "kepatihan-tuning-8-4-max-uniformity", u"Tuning 8.4 Max Uniformity" },
+        { "7-1-max-diversity", "kepatihan-tuning-7-1-max-diversity", u"Tuning 7.1 Max Diversity" },
+        { "7-2-max-diversity", "kepatihan-tuning-7-2-max-diversity", u"Tuning 7.2 Max Diversity" },
+        { "7-3-max-diversity", "kepatihan-tuning-7-3-max-diversity", u"Tuning 7.3 Max Diversity" },
+        { "7-4-max-diversity", "kepatihan-tuning-7-4-max-diversity", u"Tuning 7.4 Max Diversity" }
+    };
+    struct KepatihanInstrumentOption {
+        const char* suffix;
+        const char16_t* name;
+    };
+    static const KepatihanInstrumentOption kepatihanInstruments[] {
+        { "gender-barung", u"Gendèr Barung" },
+        { "gender-panerus", u"Gendèr Panerus" },
+        { "gong-kemodong", u"Gong Kemodong" },
+        { "gambang", u"Gambang" },
+        { "suling", u"Suling" },
+        { "siter", u"Siter" },
+        { "rebab", u"Rebab" },
+        { "selompret", u"Selompret" }
+    };
+    for (const KepatihanTuningOption& tuning : kepatihanTunings) {
+        for (const KepatihanInstrumentOption& instrument : kepatihanInstruments) {
+            const std::string actionCode = std::string("convert-to-kepatihan-") + tuning.suffix + "-" + instrument.suffix;
+            registerAction(actionCode, [this, tuning, instrument]() {
+                convertToKepatihan(muse::String::fromUtf8(tuning.profileId), muse::String(instrument.name), muse::String(tuning.label));
+            });
+        }
+        const std::string tuningActionCode = std::string("convert-to-kepatihan-") + tuning.suffix;
+        registerAction(tuningActionCode, [this, tuning]() {
+            convertToKepatihan(muse::String::fromUtf8(tuning.profileId));
+        });
+    }
     registerAction("parts", &Controller::openPartsDialog);
     registerAction("staff-text-properties", &Controller::openStaffTextPropertiesDialog);
     registerAction("system-text-properties", &Controller::openStaffTextPropertiesDialog);
@@ -799,7 +849,7 @@ void NotationActionController::init()
         auto ad = dispatcher();
         auto d = commandDispatcher();
         for (const auto& [actionCode, command] : actionToCommand) {
-            ad->reg(this, actionCode, [d, command]() { return d->dispatch(command); });
+            ad->reg(this, actionCode, [d, command = command]() { return d->dispatch(command); });
         }
 
         ad->reg(this, "custom-tuplet", [d](const ActionData& args) {
@@ -2391,6 +2441,126 @@ void NotationActionController::openTransposeDialog()
     interactive()->open("musescore://notation/transpose").onResolve(this, [this](const Val&) {
         currentNotationInteraction()->checkAndShowError();
     });
+}
+
+void NotationActionController::convertToGamelan()
+{
+    convertToKepatihan(u"kepatihan-tuning-8-1-med-diversity");
+}
+
+void NotationActionController::convertToKepatihan(const muse::String& profileId)
+{
+    convertToKepatihan(profileId, {}, {});
+}
+
+void NotationActionController::convertToKepatihan(const muse::String& profileId,
+                                                   const muse::String& instrumentName,
+                                                   const muse::String& tuningLabel)
+{
+    const IMasterNotationPtr masterNotation = currentMasterNotation();
+    if (!masterNotation) {
+        return;
+    }
+
+    const engraving::NumericPulseProfile* targetProfile = engraving::numericPulseProfileById(profileId);
+    if (!targetProfile || !targetProfile->isValid()) {
+        interactive()->error(muse::trc("notation", "Kepatihan tuning unavailable"),
+                             muse::trc("notation", "The selected Kepatihan tuning profile is not installed."));
+        return;
+    }
+
+    const engraving::StaffType* targetStaffType = engraving::StaffType::presetFromXmlName(u"stdNumericPulse");
+
+    // A score can contain several tunings and ordinary orchestral parts. The
+    // menu action therefore follows the user's selection instead of silently
+    // converting every staff with one tuning profile.
+    const INotationSelectionPtr selection = currentNotationSelection();
+    if (!selection || selection->isNone()) {
+        interactive()->error(muse::trc("notation", "Select a staff first"),
+                             muse::trc("notation", "Select a note or rest in the staff you want to convert, then run this command again."));
+        return;
+    }
+
+    std::vector<const engraving::Part*> selectedParts;
+    for (const engraving::EngravingItem* element : selection->elements()) {
+        if (!element || !element->staff() || !element->staff()->part()) {
+            continue;
+        }
+
+        const engraving::Part* part = element->staff()->part();
+        if (!muse::contains(selectedParts, part)) {
+            selectedParts.push_back(part);
+        }
+    }
+
+    const INotationPartsPtr parts = masterNotation->parts();
+    for (const engraving::Part* part : selectedParts) {
+        if (!part) {
+            continue;
+        }
+
+        engraving::Instrument convertedInstrument(*part->instrument());
+
+        // A bundled Gendèr soundfont is a real instrument template, not just
+        // a notation profile. Use the matching template so playback changes
+        // along with its notation.
+        muse::String targetInstrumentId;
+        if (instrumentName == u"Gendèr Barung") {
+            if (profileId == u"kepatihan-tuning-8-1-med-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-8-1-med-diversity";
+            } else if (profileId == u"kepatihan-tuning-8-2-med-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-8-2-med-diversity";
+            } else if (profileId == u"kepatihan-tuning-8-3-med-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-8-3-med-diversity";
+            } else if (profileId == u"kepatihan-tuning-8-4-med-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-8-4-med-diversity";
+            } else if (profileId == u"kepatihan-tuning-8-1-max-uniformity") {
+                targetInstrumentId = u"gender-barung-tuning-8-1-max-uniformity";
+            } else if (profileId == u"kepatihan-tuning-8-2-max-uniformity") {
+                targetInstrumentId = u"gender-barung-tuning-8-2-max-uniformity";
+            } else if (profileId == u"kepatihan-tuning-8-3-max-uniformity") {
+                targetInstrumentId = u"gender-barung-tuning-8-3-max-uniformity";
+            } else if (profileId == u"kepatihan-tuning-8-4-max-uniformity") {
+                targetInstrumentId = u"gender-barung-tuning-8-4-max-uniformity";
+            } else if (profileId == u"kepatihan-tuning-7-1-max-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-7-1-max-diversity";
+            } else if (profileId == u"kepatihan-tuning-7-2-max-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-7-2-max-diversity";
+            } else if (profileId == u"kepatihan-tuning-7-3-max-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-7-3-max-diversity";
+            } else if (profileId == u"kepatihan-tuning-7-4-max-diversity") {
+                targetInstrumentId = u"gender-barung-tuning-7-4-max-diversity";
+            }
+        } else if (instrumentName == u"Rebab"
+                   && profileId == u"kepatihan-tuning-8-1-med-diversity") {
+            targetInstrumentId = u"rebab-tuning-8-1-med-diversity";
+        } else if (instrumentName == u"Rebab"
+                   && profileId == u"kepatihan-tuning-7-1-max-diversity") {
+            targetInstrumentId = u"rebab-tuning-7-1-max-diversity";
+        }
+        if (!targetInstrumentId.isEmpty()) {
+            const engraving::InstrumentTemplate& targetTemplate = instrumentsRepository()->instrumentTemplate(targetInstrumentId);
+            if (targetTemplate.id == targetInstrumentId) {
+                convertedInstrument = engraving::Instrument::fromTemplate(&targetTemplate);
+            }
+        }
+
+        convertedInstrument.setNumericPulseProfileId(profileId);
+        if (!instrumentName.isEmpty()) {
+            const muse::String displayName = instrumentName + u" " + tuningLabel;
+            convertedInstrument.setLongName(displayName);
+            if (targetInstrumentId.isEmpty()) {
+                convertedInstrument.setShortName(instrumentName);
+            }
+            convertedInstrument.setTrackName(displayName);
+        }
+
+        InstrumentKey key;
+        key.instrumentId = part->instrumentId();
+        key.partId = part->id();
+        key.tick = engraving::Part::MAIN_INSTRUMENT_TICK;
+        parts->replaceInstrument(key, convertedInstrument, targetStaffType);
+    }
 }
 
 void NotationActionController::openPartsDialog()

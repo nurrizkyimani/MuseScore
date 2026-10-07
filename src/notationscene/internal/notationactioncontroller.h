@@ -40,6 +40,7 @@
 #include "context/iuicontextresolver.h"
 #include "playback/iplaybackcontroller.h"
 #include "engraving/iengravingconfiguration.h"
+#include "notation/iinstrumentsrepository.h"
 #include "notation/inotationconfiguration.h"
 
 #include "notation/inotation_fwd.h"
@@ -50,6 +51,7 @@ class NotationActionController : public INotationCommandsController, public muse
     public muse::async::Asyncable, public muse::Contextable
 {
     muse::GlobalInject<INotationConfiguration> configuration;
+    muse::GlobalInject<IInstrumentsRepository> instrumentsRepository;
     muse::GlobalInject<engraving::IEngravingConfiguration> engravingConfiguration;
     muse::ContextInject<muse::actions::IActionsDispatcher> dispatcher = { this };
     muse::ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher = { this };
@@ -193,6 +195,9 @@ private:
     void openEditStringsDialog();
     void openBreaksDialog();
     void openTransposeDialog();
+    void convertToGamelan();
+    void convertToKepatihan(const muse::String& profileId);
+    void convertToKepatihan(const muse::String& profileId, const muse::String& instrumentName, const muse::String& tuningLabel);
     void openPartsDialog();
     void openTupletOtherDialog();
     void openStaffTextPropertiesDialog();
