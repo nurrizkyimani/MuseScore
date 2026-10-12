@@ -112,7 +112,7 @@ inline muse::RectF numericPulseEmptyPulseGroupBbox(double spatium, int pulseCoun
 
 inline double numericPulseRegisterDotDiameter(double spatium)
 {
-    return 0.25 * spatium;
+    return 0.60 * spatium;
 }
 
 inline double numericPulseRegisterDotGap(double spatium)

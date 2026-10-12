@@ -92,6 +92,11 @@ public:
     const NoteValList& notes() const { return m_notes; }
     void setNotes(const NoteValList& v) { m_notes = v; }
 
+    bool numericPulseRegisterExplicit() const { return m_numericPulseRegisterExplicit; }
+    void setNumericPulseRegisterExplicit(bool value) { m_numericPulseRegisterExplicit = value; }
+    int numericPulseRegisterOffset() const { return m_numericPulseRegisterOffset; }
+    void setNumericPulseRegisterOffset(int value) { m_numericPulseRegisterOffset = value; }
+
     voice_idx_t voice() const { return m_track == muse::nidx ? 0 : (m_track % VOICES); }
     void setVoice(voice_idx_t v);
     track_idx_t track() const { return m_track; }
@@ -150,6 +155,8 @@ private:
     int m_string = VISUAL_INVALID_STRING_INDEX; // visual string selected for input (TAB staves only)
 
     NoteValList m_notes;
+    bool m_numericPulseRegisterExplicit = false;
+    int m_numericPulseRegisterOffset = 0;
 
     Segment* m_lastSegment = nullptr;
     Segment* m_segment = nullptr; // current segment

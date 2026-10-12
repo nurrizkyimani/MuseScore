@@ -1080,14 +1080,17 @@ Segment* Score::setNoteRest(Segment* segment, track_idx_t track, NoteVal nval, F
             // extend slur
             //
             Chord* chord = toNote(nr)->chord();
-            is.slur()->undoChangeProperty(Pid::SPANNER_TICKS, chord->tick() - is.slur()->tick());
-            for (EngravingObject* se : is.slur()->linkList()) {
-                Slur* slur = toSlur(se);
-                for (EngravingObject* ee : chord->linkList()) {
-                    EngravingItem* e = static_cast<EngravingItem*>(ee);
-                    if (e->score() == slur->score() && e->track() == slur->track2()) {
-                        slur->score()->undo(new ChangeSpannerElements(slur, slur->startElement(), e));
-                        break;
+            const Fraction slurTicks = chord->tick() - is.slur()->tick();
+            if (slurTicks.positive()) {
+                is.slur()->undoChangeProperty(Pid::SPANNER_TICKS, slurTicks);
+                for (EngravingObject* se : is.slur()->linkList()) {
+                    Slur* slur = toSlur(se);
+                    for (EngravingObject* ee : chord->linkList()) {
+                        EngravingItem* e = static_cast<EngravingItem*>(ee);
+                        if (e->score() == slur->score() && e->track() == slur->track2()) {
+                            slur->score()->undo(new ChangeSpannerElements(slur, slur->startElement(), e));
+                            break;
+                        }
                     }
                 }
             }

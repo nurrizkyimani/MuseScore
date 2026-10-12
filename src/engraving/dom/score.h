@@ -440,6 +440,7 @@ public:
     Rest* setRest(const Fraction& tick, track_idx_t track, const Fraction&, bool useDots, Tuplet* tuplet, bool useFullMeasureRest = true);
     std::vector<Rest*> setRests(const Fraction& tick, track_idx_t track, const Fraction& l, bool useDots, Tuplet* tuplet,
                                 bool useFullMeasureRest = true);
+    int normalizeNumericPulseMeasureRests();
 
     ChordRest* searchNote(const Fraction& tick, track_idx_t track) const;
 

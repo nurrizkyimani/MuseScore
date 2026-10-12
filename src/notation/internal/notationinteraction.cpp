@@ -4026,6 +4026,14 @@ void NotationInteraction::setNumericPulseRegister(int registerOffset)
     startEdit(TranslatableString("undoableAction", "Change numeric register"));
     EditNote::setNumericPulseRegister(score(), registerOffset);
     apply();
+
+    // Keep the next numeric input in sync with the register just chosen for
+    // the selected note. Without this, the selected note changes visually but
+    // the input state can retain a previous lower/upper register override.
+    InputState& inputState = score()->inputState();
+    inputState.setNumericPulseRegisterOffset(registerOffset);
+    inputState.setNumericPulseRegisterExplicit(true);
+    notifyAboutNoteInputStateChanged();
 }
 
 void NotationInteraction::moveLyrics(MoveDirection d)

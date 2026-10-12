@@ -570,6 +570,11 @@ void NoteInput::addRest(Transaction& tx, Score* score)
         return;
     }
 
+    if (numericPulseProfile(is.staff(), is.tick())
+        && is.duration().type() == DurationType::V_QUARTER) {
+        score->normalizeNumericPulseMeasureRests();
+    }
+
     score->expandVoice(is.segment(), is.track());
 
     // The numeric-pulse cursor may sit inside a longer rest without having a
@@ -784,6 +789,16 @@ std::pair<Note*, Note*> NoteInput::repitchReplaceNote(Transaction&, Score* score
 
 Ret NoteInput::putNote(Transaction& tx, Score* score, const PointF& pos, bool replace, bool insert)
 {
+    const InputState& currentInputState = score->inputState();
+    if (numericPulseProfile(currentInputState.staff(), currentInputState.tick())
+        && currentInputState.duration().type() == DurationType::V_QUARTER) {
+        // Empty numeric measures are rendered as virtual pulse dots until a
+        // real quarter-pulse rest exists at each tick. Materialize those
+        // rests before hit-testing so a click on any dot resolves to that
+        // pulse instead of falling back to the measure start.
+        score->normalizeNumericPulseMeasureRests();
+    }
+
     Position p;
     if (!score->getPosition(&p, pos, score->inputState().voice())) {
         LOGD("cannot put note here, get position failed");
@@ -853,7 +868,36 @@ Ret NoteInput::putNote(Transaction& tx, Score* score, const Position& p, bool re
 
     DirectionV stemDirection = DirectionV::AUTO;
     bool error = false;
-    NoteVal nval = noteValForPosition(score, p, is.accidentalType(), error);
+    NoteVal nval;
+
+    // Numeric-pulse mouse entry chooses the degree from the note-input
+    // toolbar, not from the vertical mouse position.  Converting the
+    // profile's inputStep through a clef here would turn the profile's
+    // centre-register pitches into a lower-register pitch (for example,
+    // inputStep 28 becomes MIDI 48 while degree 1 is MIDI 60).  Build the
+    // note value from the profile pitch and the explicitly selected register
+    // instead, so a normal click always enters the centre register.
+    if (const NumericPulseProfile* numericProfile = numericPulseProfile(st, s->tick());
+        numericProfile && !is.rest()) {
+        const NumericPulseDegree* degree = nullptr;
+        if (!is.notes().empty()) {
+            degree = numericProfile->degreeForPitch(is.notes().front().pitch);
+        }
+        if (!degree && !numericProfile->degrees.empty()) {
+            degree = &numericProfile->degrees.front();
+        }
+
+        const int registerOffset = is.numericPulseRegisterExplicit()
+                                   ? is.numericPulseRegisterOffset()
+                                   : numericProfile->defaultRegister;
+        const int pitch = numericPulsePitch(numericProfile, degree, registerOffset);
+        if (!degree || pitch < 0) {
+            return make_ret(Ret::Code::UnknownError);
+        }
+        nval = noteVal(score, pitch, p.staffIdx, false);
+    } else {
+        nval = noteValForPosition(score, p, is.accidentalType(), error);
+    }
     if (error) {
         return make_ret(Ret::Code::UnknownError);
     }
@@ -1308,10 +1352,13 @@ void NoteInput::addPitch(Transaction& tx, Score* score, const NoteInputParams& p
         if (!degree) {
             return;
         }
+        if (is.duration().type() == DurationType::V_QUARTER) {
+            score->normalizeNumericPulseMeasureRests();
+        }
         is.setVoice(0);
         int registerOffset = numericProfile->defaultRegister;
-        if (!is.notes().empty() && numericProfile->degreeForPitch(is.notes().front().pitch)) {
-            registerOffset = numericPulseRegister(numericProfile, is.notes().front().pitch);
+        if (is.numericPulseRegisterExplicit()) {
+            registerOffset = is.numericPulseRegisterOffset();
         }
         const int pitch = numericPulsePitch(numericProfile, degree, registerOffset);
         if (pitch < 0) {

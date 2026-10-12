@@ -232,6 +232,8 @@ void InputState::update(Selection& selection)
     setRest(false);
     setAccidentalType(AccidentalType::NONE);
     setNotes({});
+    setNumericPulseRegisterExplicit(false);
+    setNumericPulseRegisterOffset(0);
     setBeyondScore(false);
 
     Note* n1 = nullptr;
@@ -316,6 +318,14 @@ void InputState::update(Selection& selection)
         n = toChord(cr)->upNote();
     }
 
+    const NumericPulseProfile* numericProfile = cr ? numericPulseProfile(cr->staff(), cr->tick()) : nullptr;
+    if (numericProfile) {
+        // Clicking numeric-pulse notation positions the cursor. It must not
+        // inherit the clicked element's rhythm or register for the next note.
+        setDuration(DurationType::V_QUARTER);
+        setNotes({});
+    }
+
     if (cr) {
         setTrack(cr->track());
         setNoteType(n ? n->noteType() : NoteType::NORMAL);
@@ -327,10 +337,6 @@ void InputState::update(Selection& selection)
         const Instrument* instr = n->part()->instrument(n->tick());
         if (instr->useDrumset()) {
             setDrumNote(n->pitch());
-        } else if (numericPulseProfile(n->staff(), n->tick())) {
-            // Numeric input keeps the selected note's register so entering a
-            // different degree does not unexpectedly jump back to the center.
-            setNotes({ n->noteVal() });
         }
     }
 }
