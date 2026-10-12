@@ -232,6 +232,8 @@ StaffTypes StaffType::type() const
 {
     static const std::map<String, StaffTypes> xmlNameToType {
         { u"stdNormal", StaffTypes::STANDARD },
+        { u"stdNumericPulse", StaffTypes::NUMERIC_PULSE },
+        { u"stdGamelanSlendro", StaffTypes::NUMERIC_PULSE }, // compatibility with early numeric-pulse scores
 
         { u"perc1Line", StaffTypes::PERC_1LINE },
         { u"perc2Line", StaffTypes::PERC_2LINE },
@@ -1096,6 +1098,9 @@ const StaffType* StaffType::preset(StaffTypes idx)
 
 const StaffType* StaffType::presetFromXmlName(const String& xmlName)
 {
+    if (xmlName == u"stdGamelanSlendro") {
+        return preset(StaffTypes::NUMERIC_PULSE);
+    }
     for (size_t i = 0; i < m_presets.size(); ++i) {
         if (m_presets[i].xmlName() == xmlName) {
             return &m_presets[i];
@@ -1125,6 +1130,7 @@ void StaffType::initStaffTypes(const Color& defaultColor)
     m_presets = {
 //                       group,              xml-name,  human-readable-name,          lin stpOff  dist clef   bars stmless time  key    ledger invis     color
         StaffType(StaffGroup::STANDARD,   u"stdNormal", muse::mtrc("engraving", "Standard"),        5, 0,     1,   true,  true, false, true, true, true, false,  defaultColor),
+        StaffType(StaffGroup::STANDARD,   u"stdNumericPulse", muse::mtrc("engraving", "Numeric pulse"),     1, 0, 1, false, true, false, true, false, false, false, defaultColor),
         StaffType(StaffGroup::PERCUSSION, u"perc1Line", muse::mtrc("engraving", "Perc. 1 line"),    1, 0,     1,   true,  true, false, true, false, true, false,  defaultColor),
         StaffType(StaffGroup::PERCUSSION, u"perc2Line", muse::mtrc("engraving", "Perc. 2 lines"),   2, 0,     1,   true,  true, false, true, false, true, false,  defaultColor),
         StaffType(StaffGroup::PERCUSSION, u"perc3Line", muse::mtrc("engraving", "Perc. 3 lines"),   3, 0,     1,   true,  true, false, true, false, true, false,  defaultColor),

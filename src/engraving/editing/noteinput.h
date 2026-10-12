@@ -51,6 +51,7 @@ enum class SymId;
 struct NoteInputParams {
     int step = 0;
     int drumPitch = -1;
+    int numericDegree = 0;
 };
 
 class NoteInput
@@ -90,6 +91,7 @@ public:
     // Command entry points
     static void addPitch(Transaction& tx, Score* score, const NoteInputParams& params, bool addFlag, bool insert);
     static void addPitch(Transaction& tx, Score* score, int step, bool addFlag, bool insert);
+    static void addRest(Transaction& tx, Score* score);
     static void addFret(Transaction& tx, Score* score, int fret);
 
     static void setDuration(Transaction& tx, Score* score, DurationType duration);

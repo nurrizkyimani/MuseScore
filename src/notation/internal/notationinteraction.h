@@ -162,6 +162,7 @@ public:
 
     // Move
     void movePitch(MoveDirection d, PitchMode mode) override;
+    void setNumericPulseRegister(int registerOffset) override;
     void nudge(MoveDirection d, bool quickly) override;
     void nudgeAnchors(MoveDirection) override;
     void moveChordRestToStaff(MoveDirection d) override;

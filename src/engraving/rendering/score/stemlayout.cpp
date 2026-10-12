@@ -21,12 +21,15 @@
  */
 
 #include "stemlayout.h"
+
+#include "numericpulserendering.h"
 #include "dom/chord.h"
 #include "dom/hook.h"
 #include "dom/note.h"
 #include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/staff.h"
+#include "dom/numericpulseprofile.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 
@@ -50,6 +53,12 @@ double StemLayout::calcDefaultStemLength(Chord* item, const LayoutContext& ctx)
     double lineDistance = (staff ? staff->lineDistance(item->tick()) : 1.0);
 
     const StaffType* staffType = staff ? staff->staffTypeForElement(item) : nullptr;
+    const NumericPulseProfile* numericProfile = numericPulseProfile(staff, item->tick());
+    if (numericProfile && numericProfile->durationMarksAbove) {
+        // Compensate for each additional rhythm bar so increasing the space
+        // between bars never pushes the lowest bar into the numeric glyph.
+        return numericPulseStemLength(spatium, item->durationType().hooks());
+    }
     const StaffType* tab = (staffType && staffType->isTabStaff()) ? staffType : nullptr;
 
     bool isBesideTabStaff = tab && !tab->stemless() && !tab->stemThrough();

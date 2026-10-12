@@ -86,6 +86,7 @@
 #include "engraving/dom/slur.h"
 #include "engraving/dom/soundflag.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/numericpulseprofile.h"
 #include "engraving/dom/stafflines.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/dom/stafftypechange.h"
@@ -456,6 +457,14 @@ void NotationInteraction::showShadowNoteForPosition(const PointF& pos)
 
     ShadowNoteParams params;
     if (!score()->getPosition(&params.position, pos, inputState.voice())) {
+        shadowNote.setVisible(false);
+        m_shadowNoteChanged.send(/*visible*/ false);
+        return;
+    }
+
+    const Staff* staff = score()->staff(params.position.staffIdx);
+    const NumericPulseProfile* numericProfile = numericPulseProfile(staff, params.position.segment->tick());
+    if (numericProfile && numericProfile->fixedBaseline) {
         shadowNote.setVisible(false);
         m_shadowNoteChanged.send(/*visible*/ false);
         return;
@@ -3973,6 +3982,26 @@ void NotationInteraction::movePitch(MoveDirection d, PitchMode mode)
     }
     EngravingItem* selected = score()->selection().element();
     if (selected && selected->isRest()) {
+        if (mode == PitchMode::NUMERIC_PULSE) {
+            if (d != MoveDirection::Up) {
+                return;
+            }
+
+            Rest* rest = toRest(selected);
+            const NumericPulseProfile* profile = numericPulseProfile(rest->staff(), rest->tick());
+            if (!profile || profile->degrees.empty()) {
+                return;
+            }
+
+            startEdit(TranslatableString("undoableAction", "Enter note"));
+            Note* note = EditNote::replaceRestWithFirstNumericPulseDegree(score(), rest);
+            apply();
+            if (note) {
+                select({ note }, SelectType::SINGLE);
+            }
+            return;
+        }
+
         if (noteInput()->state().staffGroup() == mu::engraving::StaffGroup::TAB) {
             // The rest won't be visible - don't try to move it...
             return;
@@ -3984,6 +4013,18 @@ void NotationInteraction::movePitch(MoveDirection d, PitchMode mode)
         EditNote::upDown(score(), MoveDirection::Up == d, mode);
     }
 
+    apply();
+}
+
+void NotationInteraction::setNumericPulseRegister(int registerOffset)
+{
+    if (score()->selection().uniqueNotes().empty()) {
+        noteInput()->setNumericPulseRegister(registerOffset);
+        return;
+    }
+
+    startEdit(TranslatableString("undoableAction", "Change numeric register"));
+    EditNote::setNumericPulseRegister(score(), registerOffset);
     apply();
 }
 
@@ -5450,6 +5491,17 @@ void NotationInteraction::putRestToSelection()
 
     if (!m_noteInput->isNoteInputMode()) {
         m_noteInput->startNoteInput(configuration()->defaultNoteInputMethod());
+    }
+
+    const NumericPulseProfile* numericProfile = numericPulseProfile(is.staff(), is.tick());
+    if (numericProfile) {
+        if (!m_noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+            m_noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+        }
+        // Numeric-pulse empty rests use the same cursor-repair path as pitch
+        // entry, including positions inside a longer existing rest.
+        m_noteInput->addRest();
+        return;
     }
 
     if (is.usingNoteEntryMethod(NoteEntryMethod::BY_DURATION) || is.usingNoteEntryMethod(NoteEntryMethod::RHYTHM)) {

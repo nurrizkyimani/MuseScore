@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <memory>
+
 #include <QQmlParserStatus>
 #include <qqmlintegration.h>
 
@@ -30,6 +32,11 @@
 #include "context/iglobalcontext.h"
 #include "ui/iuistate.h"
 #include "notationscene/inotationcommandscontroller.h"
+#include "global/async/asyncable.h"
+
+namespace mu::engraving {
+struct NumericPulseProfile;
+}
 
 namespace mu::notation {
 class NoteInputBarModel : public muse::uicomponents::AbstractMenuModel, public QQmlParserStatus
@@ -39,6 +46,7 @@ class NoteInputBarModel : public muse::uicomponents::AbstractMenuModel, public Q
     QML_ELEMENT;
 
     Q_PROPERTY(bool isInputAllowed READ isInputAllowed NOTIFY isInputAllowedChanged)
+    Q_PROPERTY(bool usesNumericPulse READ usesNumericPulse NOTIFY usesNumericPulseChanged)
 
     muse::ContextInject<muse::ui::IUiState> uiState = { this };
     muse::ContextInject<context::IGlobalContext> context = { this };
@@ -51,9 +59,13 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     bool isInputAllowed() const;
+    bool usesNumericPulse() const;
+
+    Q_INVOKABLE void handleMenuItem(const QString& itemId) override;
 
 signals:
     void isInputAllowedChanged();
+    void usesNumericPulseChanged();
 
 private:
     enum NoteInputRoles {
@@ -65,6 +77,10 @@ private:
     void componentComplete() override {}
     void init();
     void load() override;
+    void onActionsStateChanges(const muse::actions::ActionCodeList& codes) override;
+    QString currentNumericPulseDurationAction() const;
+    int currentNumericPulseRegister() const;
+    const engraving::NumericPulseProfile* activeNumericPulseProfile() const;
 
     muse::uicomponents::MenuItem* makeActionItem(const muse::ui::UiAction& action, const QString& section,
                                                  const muse::uicomponents::MenuItemList& subitems = {});
@@ -81,5 +97,8 @@ private:
     muse::uicomponents::MenuItemList makeTextItems();
     muse::uicomponents::MenuItemList makeLinesItems();
     muse::uicomponents::MenuItemList makeChordAndFretboardDiagramsItems();
+
+    std::unique_ptr<muse::async::Asyncable> m_noteInputStateReceiver;
+    QString m_selectedNumericDegreeAction;
 };
 }

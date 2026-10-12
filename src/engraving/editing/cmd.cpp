@@ -60,6 +60,7 @@
 #include "../dom/measurerepeat.h"
 #include "../dom/mscore.h"
 #include "../dom/note.h"
+#include "../dom/numericpulseprofile.h"
 #include "../dom/ornament.h"
 #include "../dom/page.h"
 #include "../dom/part.h"
@@ -858,6 +859,7 @@ void Score::createCRSequence(const Fraction& f, ChordRest* cr, const Fraction& t
     Fraction tick(t);
     Measure* measure = cr->measure();
     ChordRest* ocr = 0;
+    const bool hideAutomaticTie = numericPulseProfile(cr->staff(), measure->tick() + t) != nullptr;
     for (TDuration d : toDurationList(f, true)) {
         ChordRest* ncr = toChordRest(cr->clone());
         ncr->setDurationType(d);
@@ -870,6 +872,7 @@ void Score::createCRSequence(const Fraction& f, ChordRest* cr, const Fraction& t
                 Note* on = oc->notes()[i];
                 Note* nn = nc->notes()[i];
                 Tie* tie = Factory::createTie(this->dummy());
+                tie->setVisible(!hideAutomaticTie);
                 tie->setStartNote(on);
                 tie->setEndNote(nn);
                 tie->setTick(tie->startNote()->tick());
@@ -901,6 +904,7 @@ Segment* Score::setNoteRest(Segment* segment, track_idx_t track, NoteVal nval, F
 
     bool isRest   = nval.isRest();
     Fraction tick = segment->tick();
+    const bool hideAutomaticTie = numericPulseProfile(staff(track2staff(track)), tick) != nullptr;
     EngravingItem* nr   = nullptr;
     Tie* tie      = nullptr;
     ChordRest* cr = toChordRest(segment->element(track));
@@ -988,6 +992,7 @@ Segment* Score::setNoteRest(Segment* segment, track_idx_t track, NoteVal nval, F
                 ncr = chord;
                 if (i + 1 < n) {
                     tie = Factory::createTie(this->dummy());
+                    tie->setVisible(!hideAutomaticTie);
                     tie->setStartNote(note);
                     tie->setTick(tie->startNote()->tick());
                     tie->setTrack(track);

@@ -54,18 +54,43 @@ Item {
     QtObject {
         id: prv
 
+        function horizontalContentWidth() {
+            var sections = ({})
+            var sectionCount = 0
+
+            for (var i = 0; i < noteInputModel.length; ++i) {
+                var section = noteInputModel.get(i).section
+                if (sections[section] === undefined) {
+                    sections[section] = true
+                    ++sectionCount
+                }
+            }
+
+            if (noteInputModel.length === 0) {
+                return 0
+            }
+
+            // Each item occupies one cell plus column spacing. Each section
+            // contributes its separator and the spacing before the next one.
+            return noteInputModel.length * (gridView.cellWidth + gridView.columnSpacing)
+                   + sectionCount
+                   + Math.max(0, sectionCount - 1) * gridView.columnSpacing
+        }
+
         function resolveHorizontalGridViewWidth() {
+            var contentWidth = horizontalContentWidth()
+
             if (root.floating) {
-                return gridView.contentWidth
+                return contentWidth
             }
 
             var requiredFreeSpace = gridView.cellWidth * 3 + gridView.rowSpacing * 4
 
-            if (root.maximumWidth - gridView.contentWidth < requiredFreeSpace) {
-                return gridView.contentWidth - requiredFreeSpace
+            if (root.maximumWidth - contentWidth < requiredFreeSpace) {
+                return contentWidth - requiredFreeSpace
             }
 
-            return gridView.contentWidth
+            return contentWidth
         }
 
         function resolveVerticalGridViewHeight() {
@@ -115,6 +140,21 @@ Item {
 
             readonly property MenuItem item: Boolean(itemModel) ? itemModel.item : null
             readonly property bool hasMenu: Boolean(item) && item.subitems.length !== 0
+            readonly property var numericPulseLabels: ({
+                "pad-note-4": "1", "pad-note-8": "½", "pad-note-16": "¼",
+                "rest": ".", "tie": "—"
+            })
+            readonly property bool useNumericPulseLabel: noteInputModel.usesNumericPulse
+                                                         && Boolean(item)
+                                                         && item.section.startsWith("numeric-")
+                                                         && (item.section === "numeric-degree"
+                                                             || item.section === "numeric-register"
+                                                             || numericPulseLabels[item.id] !== undefined)
+            readonly property string numericPulseLabel: item
+                                                         && (item.section === "numeric-degree"
+                                                             || item.section === "numeric-register")
+                                                         ? item.title
+                                                         : numericPulseLabels[item.id] || ""
 
             width: gridView.cellWidth
             height: gridView.cellWidth
@@ -124,7 +164,8 @@ Item {
             accentButton: (Boolean(item) && item.checked) || menuLoader.isMenuOpened
             transparent: !accentButton
 
-            icon: Boolean(item) ? item.icon : IconCode.NONE
+            icon: Boolean(item) && !useNumericPulseLabel ? item.icon : IconCode.NONE
+            text: useNumericPulseLabel ? numericPulseLabel : ""
             iconFont: ui.theme.toolbarIconsFont
 
             toolTipTitle: Boolean(item) ? item.title : ""

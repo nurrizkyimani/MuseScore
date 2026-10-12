@@ -33,6 +33,9 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/sig.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/numericpulseprofile.h"
+#include "engraving/dom/stafftype.h"
 #include "engraving/editing/noteinput.h"
 
 #include "notation/inotationautomation.h" // IWYU pragma: keep
@@ -1076,6 +1079,15 @@ void NotationActionController::handleNoteAction(const NoteInputParams& params, c
 
     startNoteInput();
 
+    const NoteInputState& inputState = noteInput->state();
+    const engraving::NumericPulseProfile* numericProfile
+        = engraving::numericPulseProfile(inputState.staff(), inputState.tick());
+    if (numericProfile && !noteInput->usingNoteInputMethod(NoteInputMethod::BY_NOTE_NAME)) {
+        // Numeric degrees are direct note events. BY_DURATION would only prime
+        // the first degree and wait for a duration button before inserting it.
+        noteInput->setNoteInputMethod(NoteInputMethod::BY_NOTE_NAME);
+    }
+
     if (addingMode == NoteAddingMode::NextChord) {
         if (noteInput->usingNoteInputMethod(NoteInputMethod::BY_DURATION)) {
             noteInput->setRestMode(false);
@@ -1719,11 +1731,30 @@ muse::Ret NotationActionController::moveWithRet(MoveDirection direction, bool qu
     const EngravingItem* selectedElement = interaction->selection()->element();
     INotationNoteInputPtr noteInput = interaction->noteInput();
     bool playChord = false;
+    bool usesNumericPulse = false;
+
+    if ((direction == MoveDirection::Up || direction == MoveDirection::Down)) {
+        const engraving::Staff* inputStaff = state.staff();
+        const engraving::NumericPulseProfile* selectedProfile = selectedElement
+                                                                ? engraving::numericPulseProfile(selectedElement->staff(), selectedElement->tick())
+                                                                : nullptr;
+        const engraving::NumericPulseProfile* inputProfile = engraving::numericPulseProfile(inputStaff, state.tick());
+        const engraving::NumericPulseProfile* activeProfile = selectedElement ? selectedProfile : inputProfile;
+        usesNumericPulse = activeProfile != nullptr;
+    }
 
     switch (direction) {
     case MoveDirection::Up:
     case MoveDirection::Down:
-        if (!quickly && selectedElement && selectedElement->isLyrics()) {
+        if (usesNumericPulse) {
+            const bool canStepDegree = selectedElement && (selectedElement->isNote() || selectedElement->isChord());
+            const bool canFillEmptyPulse = selectedElement && selectedElement->isRest() && direction == MoveDirection::Up;
+            if (canStepDegree || (!quickly && canFillEmptyPulse)) {
+                interaction->movePitch(direction, quickly ? PitchMode::OCTAVE : PitchMode::NUMERIC_PULSE);
+                seekAndPlaySelectedElement(true);
+            }
+            return muse::make_ok();
+        } else if (!quickly && selectedElement && selectedElement->isLyrics()) {
             interaction->moveLyrics(direction);
         } else if (selectedElement && (selectedElement->isTextBase() || selectedElement->isArticulationFamily())) {
             interaction->nudge(direction, quickly);
@@ -1834,6 +1865,15 @@ void NotationActionController::movePitchDiatonic(MoveDirection direction, bool)
     }
 
     INotationNoteInputPtr noteInput = interaction->noteInput();
+    const engraving::Staff* inputStaff = noteInput->state().staff();
+    const engraving::EngravingItem* selectedElement = interaction->selection()->element();
+    const engraving::NumericPulseProfile* inputProfile = engraving::numericPulseProfile(inputStaff, noteInput->state().tick());
+    const engraving::NumericPulseProfile* selectedProfile = selectedElement
+                                                            ? engraving::numericPulseProfile(selectedElement->staff(), selectedElement->tick())
+                                                            : nullptr;
+    if ((inputProfile && inputProfile->fixedBaseline) || (selectedProfile && selectedProfile->fixedBaseline)) {
+        return;
+    }
     if (noteInput->isNoteInputMode() && noteInput->usingNoteInputMethod(NoteInputMethod::BY_DURATION)) {
         moveInputNotes(direction == MoveDirection::Up, PitchMode::DIATONIC);
         return;

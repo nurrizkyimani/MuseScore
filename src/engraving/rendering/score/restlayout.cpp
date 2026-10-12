@@ -21,6 +21,8 @@
  */
 
 #include "restlayout.h"
+#include "numericpulserendering.h"
+#include "dom/numericpulseprofile.h"
 
 #include "beamlayout.h"
 #include "chordlayout.h"
@@ -81,6 +83,23 @@ void RestLayout::layoutRest(const Rest* item, Rest::LayoutData* ldata, const Lay
 
     ldata->setPosX(0.0);
     const StaffType* stt = item->staffType();
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile) {
+        ldata->sym = SymId::noSym;
+        ldata->setPosY(0.0);
+        int pulseCount = 1;
+        double availableWidth = 0.0;
+        if (item->durationType().isMeasure() && item->measure()) {
+            pulseCount = numericPulseMeasurePulseCount(item->measure()->ticks(), item->measure()->timesig());
+            availableWidth = item->measure()->width();
+        }
+        ldata->setBbox(numericProfile->showEmptyPulses
+                       ? numericPulseEmptyPulseGroupBbox(item->spatium(), pulseCount, availableWidth) : RectF());
+        if (!item->shouldNotBeDrawn()) {
+            fillShape(item, ldata, ctx.conf());
+        }
+        return;
+    }
     if (stt && stt->isTabStaff()) {
         // if rests are shown and note values are shown as duration symbols
         if (stt->showRests() && stt->genDurations()) {
@@ -656,7 +675,11 @@ void RestLayout::fillShape(const Rest* item, Rest::LayoutData* ldata)
 
     if ((!item->isGap() || item->debugDrawGap()) && !item->shouldNotBeDrawn()) {
         shape.add(ChordLayout::chordRestShape(item));
-        shape.add(item->symBbox(ldata->sym), item);
+        if (numericPulseProfile(item->staff(), item->tick())) {
+            shape.add(ldata->bbox(), item);
+        } else {
+            shape.add(item->symBbox(ldata->sym), item);
+        }
         for (const NoteDot* dot : item->dotList()) {
             if (dot->addToSkyline()) {
                 shape.add(item->symBbox(SymId::augmentationDot).translated(dot->pos()), dot);

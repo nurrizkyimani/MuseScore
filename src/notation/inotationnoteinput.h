@@ -47,6 +47,7 @@ public:
     virtual void setNoteInputMethod(NoteInputMethod method) = 0;
 
     virtual void addNote(const NoteInputParams& params, NoteAddingMode addingMode) = 0;
+    virtual void addRest() = 0;
     virtual void setDuration(engraving::DurationType duration) = 0;
     virtual void toggleRest() = 0;
     virtual void toggleDots(int dots) = 0;
@@ -69,6 +70,7 @@ public:
     virtual void setInputNote(const NoteInputParams& params) = 0;
     virtual void setInputNotes(const engraving::NoteValList& notes) = 0;
     virtual void moveInputNotes(bool up, engraving::UpDownMode mode) = 0;
+    virtual void setNumericPulseRegister(int registerOffset) = 0;
 
     virtual void setRestMode(bool rest) = 0;
     virtual void setAccidental(engraving::AccidentalType accidentalType) = 0;

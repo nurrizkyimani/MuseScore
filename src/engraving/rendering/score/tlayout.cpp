@@ -22,6 +22,7 @@
 #include <cfloat>
 
 #include "tlayout.h"
+#include "numericpulserendering.h"
 
 #include "global/realfn.h"
 #include "global/types/number.h"
@@ -62,6 +63,7 @@
 #include "dom/figuredbass.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
+#include "dom/numericpulseprofile.h"
 
 #include "dom/glissando.h"
 #include "dom/gradualtempochange.h"
@@ -4142,11 +4144,22 @@ void TLayout::layoutNote(const Note* item, Note::LayoutData* ldata)
         ldata->setPos(PointF());
     }
 
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    const bool useNumericPulse = numericProfile != nullptr;
     bool useTablature = item->staff() && item->staff()->isTabStaff(item->chord()->tick());
     ldata->useTablature.set_value(useTablature);
 
     RectF noteBBox;
-    if (useTablature) {
+    if (useNumericPulse) {
+        const bool hasNativeBeam = item->chord() && item->chord()->beam();
+        const int durationMarks = hasNativeBeam || !numericProfile->durationMarksAbove
+                                  ? 0 : item->chord()->durationType().hooks();
+        noteBBox = numericPulseNoteBbox(numericPulseDegreeText(numericProfile, item->pitch()),
+                                        item->magS(), item->spatium(),
+                                        numericPulseRegister(numericProfile, item->pitch()), durationMarks);
+        ldata->cachedNoteheadSym.set_value(SymId::noSym);
+        ldata->cachedSymNull.set_value(SymId::noSym);
+    } else if (useTablature) {
         if (item->displayFret() == Note::DisplayFretOption::Hide) {
             return;
         }
@@ -4267,6 +4280,11 @@ void TLayout::layoutNoteDot(const NoteDot* item, NoteDot::LayoutData* ldata)
 {
     LAYOUT_CALL_ITEM(item);
     LD_INDEPENDENT;
+
+    if (numericPulseProfile(item->staff(), item->tick())) {
+        ldata->setBbox(RectF());
+        return;
+    }
 
     if (ldata->isValid()) {
         return;

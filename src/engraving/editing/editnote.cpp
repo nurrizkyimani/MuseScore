@@ -35,8 +35,10 @@
 #include "dom/linkedobjects.h"
 #include "dom/measure.h"
 #include "dom/note.h"
+#include "dom/numericpulseprofile.h"
 #include "dom/ornament.h"
 #include "dom/part.h"
+#include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/staff.h"
 #include "dom/stringdata.h"
@@ -477,9 +479,85 @@ void EditNote::upDownChromatic(bool up, int pitch, Note* n, Key key, int tpc1, i
 //   upDown
 //---------------------------------------------------------
 
+Note* EditNote::replaceRestWithFirstNumericPulseDegree(Score* score, Rest* rest)
+{
+    if (!score || !rest || !rest->segment()) {
+        return nullptr;
+    }
+
+    const NumericPulseProfile* profile = numericPulseProfile(rest->staff(), rest->tick());
+    if (!profile || profile->degrees.empty()) {
+        return nullptr;
+    }
+
+    const NumericPulseDegree& firstDegree = profile->degrees.front();
+    Segment* restSegment = rest->segment();
+    const track_idx_t track = rest->track();
+    // A full-measure rest has a V_MEASURE duration type, whose
+    // durationTypeTicks() is zero. setNoteRest() requires the actual gap
+    // duration, so use the stored measure length for that special case.
+    const Fraction duration = rest->durationType().isMeasure() ? rest->ticks() : rest->durationTypeTicks();
+    if (duration.isZero()) {
+        return nullptr;
+    }
+    Segment* segment = score->setNoteRest(restSegment, track, NoteVal(firstDegree.scorePitch), duration, DirectionV::AUTO);
+    Chord* chord = segment && segment->element(track) && segment->element(track)->isChord()
+                   ? toChord(segment->element(track))
+                   : nullptr;
+    return chord ? chord->upNote() : nullptr;
+}
+
+Rest* EditNote::replaceFirstNumericPulseDegreeWithRest(Score* score, Note* note)
+{
+    if (!score || !note || !note->chord() || !note->chord()->segment()) {
+        return nullptr;
+    }
+
+    const NumericPulseProfile* profile = numericPulseProfile(note->staff(), note->tick());
+    const NumericPulseDegree* degree = profile ? profile->degreeForPitch(note->pitch()) : nullptr;
+    if (!degree || degree != &profile->degrees.front()) {
+        return nullptr;
+    }
+
+    Chord* chord = note->chord();
+    Segment* noteSegment = chord->segment();
+    const track_idx_t track = chord->track();
+    const Fraction duration = chord->durationTypeTicks();
+    Segment* segment = score->setNoteRest(noteSegment, track, NoteVal(), duration, DirectionV::AUTO);
+    EngravingItem* item = segment ? segment->element(track) : nullptr;
+    return item && item->isRest() ? toRest(item) : nullptr;
+}
+
+void EditNote::setNumericPulseRegister(Score* score, int registerOffset)
+{
+    for (Note* note : score->selection().uniqueNotes()) {
+        const NumericPulseProfile* profile = numericPulseProfile(note->staff(), note->tick());
+        const NumericPulseDegree* degree = profile ? profile->degreeForPitch(note->pitch()) : nullptr;
+        const int pitch = numericPulsePitch(profile, degree, registerOffset);
+        if (pitch < 0 || pitch == note->pitch()) {
+            continue;
+        }
+
+        const Key key = note->staff()->key(note->tick());
+        const int targetTpc = pitch2tpc(pitch, key, Prefer::NEAREST);
+        const int tpc1 = note->concertPitch() ? targetTpc : note->transposeTpc(targetTpc);
+        const int tpc2 = note->concertPitch() ? note->transposeTpc(targetTpc) : targetTpc;
+        undoChangePitch(score, note, pitch, tpc1, tpc2);
+    }
+    score->setPlayNote(true);
+    score->setSelectionChanged(true);
+}
+
 void EditNote::upDown(Score* score, bool up, UpDownMode mode)
 {
     std::vector<Note*> el = score->selection().uniqueNotes();
+
+    if (!up && mode == UpDownMode::NUMERIC_PULSE && el.size() == 1) {
+        if (Rest* rest = replaceFirstNumericPulseDegreeWithRest(score, el.front())) {
+            score->select(rest, SelectType::SINGLE);
+            return;
+        }
+    }
 
     std::sort(el.begin(), el.end(), [up](Note* a, Note* b) {
         if (up) {
@@ -564,20 +642,36 @@ void EditNote::upDown(Score* score, bool up, UpDownMode mode)
                 oNote->undoChangeProperty(Pid::FRET, fret);
             }
             break;
+
+            case UpDownMode::NUMERIC_PULSE:
+                break;
             }
         }
         break;
         case StaffGroup::STANDARD:
             switch (mode) {
             case UpDownMode::OCTAVE:
-                if (up) {
+                if (const NumericPulseProfile* profile = numericPulseProfile(staff, tick)) {
+                    const NumericPulseDegree* degree = profile->degreeForPitch(pitch);
+                    const int targetRegister = numericPulseRegister(profile, pitch) + (up ? 1 : -1);
+                    const int targetPitch = numericPulsePitch(profile, degree, targetRegister);
+                    if (targetPitch >= 0) {
+                        newPitch = targetPitch;
+                        const int targetTpc = pitch2tpc(newPitch, key, Prefer::NEAREST);
+                        if (oNote->concertPitch()) {
+                            newTpc1 = targetTpc;
+                            newTpc2 = oNote->transposeTpc(newTpc1);
+                        } else {
+                            newTpc2 = targetTpc;
+                            newTpc1 = oNote->transposeTpc(newTpc2);
+                        }
+                    }
+                } else if (up) {
                     if (pitch < 116) {
                         newPitch = pitch + 12;
                     }
-                } else {
-                    if (pitch > 11) {
-                        newPitch = pitch - 12;
-                    }
+                } else if (pitch > 11) {
+                    newPitch = pitch - 12;
                 }
                 break;
 
@@ -610,6 +704,53 @@ void EditNote::upDown(Score* score, bool up, UpDownMode mode)
                         newPitch += vStaff->transpose(tick).chromatic;
                         newTpc1 = firstTiedNote->transposeTpc(newTpc2);
                     }
+                }
+            }
+            break;
+
+            case UpDownMode::NUMERIC_PULSE:
+            {
+                const NumericPulseProfile* profile = numericPulseProfile(staff, tick);
+                const NumericPulseDegree* currentDegree = profile ? profile->degreeForPitch(pitch) : nullptr;
+                if (!currentDegree) {
+                    break;
+                }
+
+                const auto current = std::find_if(profile->degrees.cbegin(), profile->degrees.cend(),
+                                                  [currentDegree](const NumericPulseDegree& degree) {
+                    return &degree == currentDegree;
+                });
+                if (current == profile->degrees.cend()) {
+                    break;
+                }
+
+                auto target = current;
+                if (up) {
+                    ++target;
+                    if (target == profile->degrees.cend()) {
+                        break;
+                    }
+                } else {
+                    if (target == profile->degrees.cbegin()) {
+                        break;
+                    }
+                    --target;
+                }
+
+                const int registerOffset = pitch - currentDegree->scorePitch;
+                const int targetPitch = target->scorePitch + registerOffset;
+                if (targetPitch < 0 || targetPitch > 127) {
+                    break;
+                }
+
+                newPitch = targetPitch;
+                const int targetTpc = pitch2tpc(newPitch, key, Prefer::NEAREST);
+                if (oNote->concertPitch()) {
+                    newTpc1 = targetTpc;
+                    newTpc2 = oNote->transposeTpc(newTpc1);
+                } else {
+                    newTpc2 = targetTpc;
+                    newTpc1 = oNote->transposeTpc(newTpc2);
                 }
             }
             break;

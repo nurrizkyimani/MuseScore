@@ -297,6 +297,8 @@ set(DOM_SRC
     ${CMAKE_CURRENT_LIST_DIR}/soundflag.cpp
     ${CMAKE_CURRENT_LIST_DIR}/soundflag.h
     ${CMAKE_CURRENT_LIST_DIR}/stafftype.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/numericpulseprofile.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/numericpulseprofile.h
     ${CMAKE_CURRENT_LIST_DIR}/stafftype.h
     ${CMAKE_CURRENT_LIST_DIR}/stafftypechange.cpp
     ${CMAKE_CURRENT_LIST_DIR}/stafftypechange.h

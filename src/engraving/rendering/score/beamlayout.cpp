@@ -21,6 +21,8 @@
  */
 #include "beamlayout.h"
 
+#include "numericpulserendering.h"
+
 #include <unordered_map>
 #include <set>
 
@@ -38,6 +40,7 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
+#include "dom/numericpulseprofile.h"
 #include "dom/system.h"
 #include "dom/timesig.h"
 #include "dom/tuplet.h"
@@ -55,6 +58,42 @@
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
+
+namespace {
+double numericPulseBeamAnchorY(const Beam* beam, const Chord* referenceChord)
+{
+    if (!beam || !referenceChord || !referenceChord->upNote()) {
+        return beam ? beam->startAnchor().y() : 0.0;
+    }
+
+    const Note* referenceNote = referenceChord->upNote();
+    double closestMarkY = referenceNote->pagePos().y();
+    bool foundNote = false;
+    for (const ChordRest* chordRest : beam->elements()) {
+        if (!chordRest || !chordRest->isChord() || !toChord(chordRest)->upNote()) {
+            continue;
+        }
+        const Note* note = toChord(chordRest)->upNote();
+        const NumericPulseProfile* profile = numericPulseProfile(note->staff(), note->tick());
+        const muse::String text = numericPulseDegreeText(profile, note->pitch());
+        const RectF glyphBbox = numericPulseGlyphBbox(text, note->magS(), note->spatium(),
+                                                       numericPulseRegister(profile, note->pitch()));
+        const double noteMarkY = note->pagePos().y() + glyphBbox.top()
+                                 - numericPulseRhythmMarkGap(note->spatium());
+        closestMarkY = foundNote ? std::min(closestMarkY, noteMarkY) : noteMarkY;
+        foundNote = true;
+    }
+
+    int maximumMarks = 1;
+    for (const ChordRest* chordRest : beam->elements()) {
+        maximumMarks = std::max(maximumMarks, chordRest->beams());
+    }
+
+    // Level zero is the outermost line. Additional levels are created toward
+    // the numbers, leaving the closest line at the fixed safe gap above them.
+    return closestMarkY - (maximumMarks - 1) * beam->beamDist();
+}
+}
 
 void BeamLayout::layout(Beam* item, const LayoutContext& ctx)
 {
@@ -144,6 +183,9 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     item->setTab((staffType && staffType->isTabStaff()) ? staffType : nullptr);
     item->setIsBesideTabStaff(item->tab() && !item->tab()->stemless() && !item->tab()->stemThrough());
 
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    const bool useNumericPulse = numericProfile && numericProfile->durationMarksAbove;
+
     // TAB's with stem beside staves have special layout
     if (item->isBesideTabStaff()) {
         item->setUp(!item->tab()->stemsDown());
@@ -223,6 +265,7 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     }
 
     std::sort(item->notePositions().begin(), item->notePositions().end());
+
     ldata->setMag(mag);
 
     item->setCross(item->minCRMove() != item->maxCRMove());
@@ -236,7 +279,9 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     ChordRest* firstNote = item->elements().front();
     Measure* measure = firstNote->measure();
     bool hasMultipleVoices = measure->hasVoices(firstNote->staffIdx(), item->tick(), item->ticks());
-    if (computeUpForMovedCross(item)) {
+    if (useNumericPulse) {
+        item->setUp(true);
+    } else if (computeUpForMovedCross(item)) {
     } else if (item->direction() != DirectionV::AUTO) {
         item->setUp(item->direction() == DirectionV::UP);
     } else if (item->maxCRMove() > 0) {
@@ -334,10 +379,18 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
 
     item->setStartAnchor(BeamTremoloLayout::chordBeamAnchor(item->ldata(), startChord, ChordBeamAnchorType::Start));
     item->setEndAnchor(BeamTremoloLayout::chordBeamAnchor(item->ldata(), endChord, ChordBeamAnchorType::End));
+    const StaffType* staffType = item->staffType();
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    const bool useNumericPulse = numericProfile && numericProfile->durationMarksAbove;
 
     if (item->isGrace()) {
         item->setBeamDist(item->beamDist() * ctx.conf().styleD(Sid::graceNoteMag));
         item->setBeamWidth(item->beamWidth() * ctx.conf().styleD(Sid::graceNoteMag));
+    }
+
+    if (useNumericPulse) {
+        item->setBeamWidth(numericPulseRhythmMarkThickness(item->spatium()) * item->mag());
+        item->setBeamDist(numericPulseRhythmMarkDistance(item->spatium()) * item->mag());
     }
 
     int fragmentIndex = item->directionIdx();
@@ -354,8 +407,16 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
         endY += item->pagePos().y();
         item->startAnchor().setY(startY);
         item->endAnchor().setY(endY);
+        if (useNumericPulse) {
+            const double numericY = numericPulseBeamAnchorY(item, startChord);
+            item->startAnchor().setY(numericY);
+            item->endAnchor().setY(numericY);
+        }
         item->mutldata()->setAnchors(item->startAnchor(), item->endAnchor());
         item->computeAndSetSlope();
+        if (useNumericPulse) {
+            item->setBeamDist(numericPulseRhythmMarkDistance(item->spatium()) * item->mag());
+        }
         createBeamSegments(item, ctx, chordRests);
         BeamLayout::setTremAnchors(item, ctx);
         return;
@@ -369,8 +430,17 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
         BeamTremoloLayout::calculateAnchors(item, item->mutldata(), ctx, chordRests, item->notePositions());
         item->setStartAnchor(item->ldata()->startAnchor);
         item->setEndAnchor(item->ldata()->endAnchor);
+        if (useNumericPulse) {
+            const double numericY = numericPulseBeamAnchorY(item, startChord);
+            item->startAnchor().setY(numericY);
+            item->endAnchor().setY(numericY);
+        }
+        item->mutldata()->setAnchors(item->startAnchor(), item->endAnchor());
         item->computeAndSetSlope();
         item->setBeamDist(item->ldata()->beamDist);
+        if (useNumericPulse) {
+            item->setBeamDist(numericPulseRhythmMarkDistance(item->spatium()) * item->mag());
+        }
     } else {
         item->setSlope(0.0);
         Chord* startChord2 = nullptr;
@@ -1209,8 +1279,24 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
         overallUp = firstUp;
     }
 
-    const double startX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), startCr, ChordBeamAnchorType::Start);
-    const double endX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), endCr, ChordBeamAnchorType::End);
+    double startX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), startCr, ChordBeamAnchorType::Start);
+    double endX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), endCr, ChordBeamAnchorType::End);
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile && numericProfile->durationMarksAbove) {
+        const auto overhangFor = [numericProfile, item](const ChordRest* chordRest) {
+            if (chordRest && chordRest->isChord()) {
+                const Note* note = toChord(chordRest)->upNote();
+                if (note) {
+                    const muse::String text = numericPulseDegreeText(numericProfile, note->pitch());
+                    return numericPulseGroupOverhang(numericPulseTextBbox(text, note->magS()),
+                                                     note->spatium());
+                }
+            }
+            return 0.70 * item->spatium() * item->mag();
+        };
+        startX -= overhangFor(startCr);
+        endX += overhangFor(endCr);
+    }
 
     double startY = item->slope() * (startX - item->startAnchor().x()) + item->startAnchor().y() - item->pagePos().y();
     double endY = item->slope() * (endX - item->startAnchor().x()) + item->startAnchor().y() - item->pagePos().y();
@@ -1315,14 +1401,26 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
 
 void BeamLayout::createBeamletSegment(Beam* item, const LayoutContext& ctx, ChordRest* cr, bool isBefore, int level)
 {
-    const double startX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), cr,
-                                                              isBefore
-                                                              ? ChordBeamAnchorType::End
-                                                              : ChordBeamAnchorType::Start);
+    const double anchorX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), cr,
+                                                               isBefore
+                                                               ? ChordBeamAnchorType::End
+                                                               : ChordBeamAnchorType::Start);
 
     const double beamletLength = ctx.conf().styleAbsolute(Sid::beamMinLen) * cr->mag();
 
-    const double endX = startX + (isBefore ? -beamletLength : beamletLength);
+    double startX = anchorX;
+    double endX = anchorX + (isBefore ? -beamletLength : beamletLength);
+    const NumericPulseProfile* numericProfile = numericPulseProfile(item->staff(), item->tick());
+    if (numericProfile && numericProfile->durationMarksAbove && cr->isChord()) {
+        const Note* note = toChord(cr)->upNote();
+        if (note) {
+            const muse::String text = numericPulseDegreeText(numericProfile, note->pitch());
+            const double overhang = numericPulseGroupOverhang(numericPulseTextBbox(text, note->magS()),
+                                                              note->spatium());
+            startX = anchorX - overhang;
+            endX = anchorX + overhang;
+        }
+    }
 
     double startY = item->slope() * (startX - item->startAnchor().x()) + item->startAnchor().y() - item->pagePos().y();
     double endY = item->slope() * (endX - startX) + startY;

@@ -62,6 +62,7 @@ public:
     void setNoteInputMethod(NoteInputMethod method) override;
 
     void addNote(const NoteInputParams& params, NoteAddingMode addingMode) override;
+    void addRest() override;
     void setDuration(DurationType duration) override;
     void toggleRest() override;
     void toggleDots(int dots) override;
@@ -82,6 +83,7 @@ public:
     void setInputNote(const NoteInputParams& params) override;
     void setInputNotes(const NoteValList& notes) override;
     void moveInputNotes(bool up, PitchMode mode) override;
+    void setNumericPulseRegister(int registerOffset) override;
 
     void setRestMode(bool rest) override;
     void setAccidental(AccidentalType accidentalType) override;

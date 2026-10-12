@@ -28,6 +28,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/numericpulseprofile.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
@@ -478,6 +479,22 @@ void NotationNoteInput::addNote(const NoteInputParams& params, NoteAddingMode ad
     m_interaction->showItem(state().cr());
 }
 
+void NotationNoteInput::addRest()
+{
+    TRACEFUNC;
+
+    m_interaction->hideShadowNote();
+
+    startEdit(TranslatableString("undoableAction", "Enter rest"));
+    NoteInput::addRest(score()->transactionManager()->currentOrDummyTransaction(), score());
+    apply();
+
+    notifyAboutStateChanged();
+
+    m_interaction->checkAndShowError();
+    m_interaction->showItem(state().cr());
+}
+
 void NotationNoteInput::applyNoteValueChange(const muse::TranslatableString& actionName,
                                              const std::function<void(mu::engraving::Transaction&)>& change)
 {
@@ -647,8 +664,43 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
         } break;
         case PitchMode::OCTAVE:
             newVal = val;
-            newVal.pitch += up ? PITCH_DELTA_OCTAVE : -PITCH_DELTA_OCTAVE;
+            if (const NumericPulseProfile* profile = numericPulseProfile(staff, tick)) {
+                const NumericPulseDegree* degree = profile->degreeForPitch(val.pitch);
+                const int targetRegister = numericPulseRegister(profile, val.pitch) + (up ? 1 : -1);
+                const int targetPitch = numericPulsePitch(profile, degree, targetRegister);
+                if (targetPitch < 0) {
+                    continue;
+                }
+                newVal.pitch = targetPitch;
+            } else {
+                newVal.pitch += up ? PITCH_DELTA_OCTAVE : -PITCH_DELTA_OCTAVE;
+            }
             break;
+        case PitchMode::NUMERIC_PULSE: {
+            const NumericPulseProfile* profile = numericPulseProfile(staff, tick);
+            const NumericPulseDegree* currentDegree = profile ? profile->degreeForPitch(val.pitch) : nullptr;
+            if (!currentDegree) {
+                continue;
+            }
+
+            size_t currentIndex = 0;
+            while (currentIndex < profile->degrees.size() && &profile->degrees[currentIndex] != currentDegree) {
+                ++currentIndex;
+            }
+            if (currentIndex == profile->degrees.size()
+                || (up && currentIndex + 1 >= profile->degrees.size())
+                || (!up && currentIndex == 0)) {
+                continue;
+            }
+
+            const size_t targetIndex = up ? currentIndex + 1 : currentIndex - 1;
+            const int registerOffset = numericPulseRegister(profile, val.pitch);
+            const int targetPitch = numericPulsePitch(profile, &profile->degrees[targetIndex], registerOffset);
+            if (targetPitch < 0) {
+                continue;
+            }
+            newVal = NoteInput::noteVal(score(), targetPitch, is.staffIdx(), false);
+        } break;
         }
 
         newVal.pitch = clampPitch(newVal.pitch);
@@ -656,6 +708,30 @@ void NotationNoteInput::moveInputNotes(bool up, PitchMode mode)
     }
 
     setInputNotes(notes);
+}
+
+void NotationNoteInput::setNumericPulseRegister(int registerOffset)
+{
+    InputState& is = score()->inputState();
+    const NumericPulseProfile* profile = numericPulseProfile(is.staff(), is.tick());
+    if (!profile || profile->degrees.empty()) {
+        return;
+    }
+
+    const NumericPulseDegree* degree = nullptr;
+    if (!is.notes().empty()) {
+        degree = profile->degreeForPitch(is.notes().front().pitch);
+    }
+    if (!degree) {
+        degree = &profile->degrees.front();
+    }
+
+    const int pitch = numericPulsePitch(profile, degree, registerOffset);
+    if (pitch < 0) {
+        return;
+    }
+
+    setInputNotes({ NoteInput::noteVal(score(), pitch, is.staffIdx(), false) });
 }
 
 void NotationNoteInput::setRestMode(bool rest)

@@ -41,6 +41,7 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/shadownote.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/numericpulseprofile.h"
 
 #include "notation/inotationelements.h" // IWYU pragma: keep
 #include "notation/inotationnoteinput.h"
@@ -1187,7 +1188,11 @@ void NotationViewInputController::startDragElements(ElementType elementsType, co
 
     bool isFilterType = viewInteraction()->selection()->isRange();
     auto isDraggable = [isFilterType, elementsType](const EngravingItem* element) {
-        return element && element->selected() && (!isFilterType || elementsType == element->type());
+        if (!element || !element->selected() || (isFilterType && elementsType != element->type())) {
+            return false;
+        }
+        const NumericPulseProfile* numericProfile = numericPulseProfile(element->staff(), element->tick());
+        return !(element->isNote() && numericProfile && numericProfile->fixedBaseline);
     };
 
     viewInteraction()->startDrag(elements, elementsOffset, isDraggable);
