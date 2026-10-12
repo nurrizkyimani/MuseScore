@@ -43,6 +43,7 @@ struct MuseScoreCmdOptions : public muse::CmdOptions {
         SoundProfile,
         TracksDiffPath,
         ExtensionUri,
+        GamelanInstrumentId,
         PageNumber,
         ScoreRegion,
         NoAudio,

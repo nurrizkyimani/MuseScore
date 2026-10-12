@@ -1955,6 +1955,10 @@ void TWrite::write(const Instrument* item, XmlWriter& xml, WriteContext&, const 
         xml.tag("soundId", item->soundId());
     }
 
+    if (!item->numericPulseProfileId().empty()) {
+        xml.tag("numericPulseProfileId", item->numericPulseProfileId());
+    }
+
     if (!item->instrumentLabel().empty()) {
         write(item->instrumentLabel(), xml);
     }

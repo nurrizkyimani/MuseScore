@@ -508,10 +508,10 @@ static const std::vector<CommandInfo> s_commandInfos = {
         ADD_NOTE_COMMAND,
         TranslatableString("action", "Add note"),
         TranslatableString("action", "Add note"),
-        InputSchema({
+        InputSchema{ {
             { "note", Arg(DataType::String, u"Note name (c, d, e, f, g, a, b)") },
             { "mode", Arg(DataType::String, u"Adding mode (current, next, insert)") },
-        }),
+        } },
         Decoration()
     },
     CommandInfo{
@@ -674,12 +674,12 @@ static const std::vector<CommandInfo> s_commandInfos = {
         ADD_TUPLET_COMMAND,
         TranslatableString("action", "Tuplet"),
         TranslatableString("action", "Enter tuplet"),
-        InputSchema({
+        InputSchema{ {
             { "ratio", Arg(DataType::String, u"Tuplet ratio (e.g. 3/2, 4/3, 5/4, 6/5, 7/6, 8/7, 9/8)") },
             { "number-type", Arg(DataType::String, u"Tuplet number type (number, relation, none)") },
             { "bracket-type", Arg(DataType::String, u"Tuplet bracket type (auto, show, none)") },
             { "auto-baselen", Arg(DataType::Boolean, u"Auto base length") },
-        }),
+        } },
         Decoration()
     },
     CommandInfo{
@@ -745,7 +745,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
         SELECT_COMMAND,
         TranslatableString("action", "Select"),
         TranslatableString("action", "Select items by target"),
-        InputSchema({
+        InputSchema{ {
             { "target",
               Arg(DataType::String,
                   u"Selection target (first-item, last-item, next-item, prev-item, "
@@ -754,7 +754,7 @@ static const std::vector<CommandInfo> s_commandInfos = {
                   u"up-note-in-chord, down-note-in-chord, top-note-in-chord, bottom-note-in-chord, notes-in-chord, "
                   u"similar, similar-in-staff, similar-in-range, all, section)") },
             { "play-mode", Arg(DataType::String, u"Play mode (none, note, chord)") },
-        }),
+        } },
         Decoration()
     },
     CommandInfo{

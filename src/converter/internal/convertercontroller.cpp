@@ -26,6 +26,7 @@
 #include <QJsonArray>
 #include <QJsonParseError>
 
+#include "async/notifylist.h"
 #include "global/defer.h"
 #include "global/io/buffer.h"
 #include "global/io/file.h"
@@ -33,9 +34,14 @@
 
 #include "engraving/dom/masterscore.h"
 #include "engraving/infrastructure/mscio.h"
+#include "engraving/dom/instrument.h"
+#include "engraving/dom/part.h"
+#include "engraving/dom/numericpulseprofile.h"
+#include "engraving/dom/stafftype.h"
 
 #include "notation/iexcerptnotation.h" // IWYU pragma: keep
 #include "notation/inotationelements.h" // IWYU pragma: keep
+#include "notation/inotationparts.h"
 #include "notation/inotationinteraction.h"
 #include "notation/inotationselectionfilter.h" // IWYU pragma: keep
 
@@ -87,7 +93,7 @@ Ret ConverterController::batchConvert(const path_t& batchJobFile, const OpenPara
         }
 
         Ret ret = convertFile(job.in, job.out, openParams, soundProfile, job.tracksDiffPath, extensionUri, job.transposeOptions,
-                              job.pageNum, job.visibleParts,
+                              {}, job.pageNum, job.visibleParts,
                               job.copyright);
         if (!ret) {
             errors.emplace_back(String(u"failed convert, err: %1, in: %2, out: %3")
@@ -115,6 +121,7 @@ Ret ConverterController::fileConvert(const path_t& in, const path_t& out,
                                      const path_t& tracksDiffPath,
                                      const UriQuery& extensionUri,
                                      const std::string& transposeOptionsJson,
+                                     const String& gamelanInstrumentId,
                                      const std::optional<ConvertTarget>& target)
 {
     std::optional<TransposeOptions> transposeOptions;
@@ -128,7 +135,7 @@ Ret ConverterController::fileConvert(const path_t& in, const path_t& out,
         transposeOptions = transposeOptionsRet.val;
     }
 
-    return convertFile(in, out, openParams, soundProfile, tracksDiffPath, extensionUri, transposeOptions, target);
+    return convertFile(in, out, openParams, soundProfile, tracksDiffPath, extensionUri, transposeOptions, gamelanInstrumentId, target);
 }
 
 Ret ConverterController::convertFile(const muse::io::path_t& in, const muse::io::path_t& out,
@@ -137,6 +144,7 @@ Ret ConverterController::convertFile(const muse::io::path_t& in, const muse::io:
                                      const path_t& tracksDiffPath,
                                      const muse::UriQuery& extensionUri,
                                      const std::optional<notation::TransposeOptions>& transposeOptions,
+                                     const String& gamelanInstrumentId,
                                      const std::optional<ConvertTarget>& target,
                                      const std::vector<size_t>& visibleParts,
                                      const CopyrightInfo& copyright)
@@ -183,6 +191,36 @@ Ret ConverterController::convertFile(const muse::io::path_t& in, const muse::io:
 
     if (!visibleParts.empty()) {
         ConverterUtils::setVisibleParts(notationProject->masterNotation()->notation(), visibleParts);
+    }
+
+    if (!gamelanInstrumentId.empty()) {
+        const engraving::NumericPulseProfile* targetProfile = engraving::numericPulseProfileById(gamelanInstrumentId);
+        if (!targetProfile || !targetProfile->isValid()) {
+            return make_ret(Err::InvalidGamelanInstrument,
+                            String(u"Invalid gamelan instrument: %1").arg(gamelanInstrumentId).toStdString());
+        }
+
+        const engraving::StaffType* targetStaffType = engraving::StaffType::presetFromXmlName(u"stdNumericPulse");
+
+        const INotationPartsPtr parts = notationProject->masterNotation()->parts();
+        for (const engraving::Part* part : parts->partList()) {
+            if (!part) {
+                continue;
+            }
+
+            // Keep the original instrument and its id. The id is part of the
+            // playback/audio-track key in MuseScore, so replacing it would
+            // detach custom SoundFont/VST assignments. Only add the notation
+            // profile and switch the staff presentation to numeric notation.
+            Instrument convertedInstrument(*part->instrument());
+            convertedInstrument.setNumericPulseProfileId(gamelanInstrumentId);
+
+            InstrumentKey key;
+            key.instrumentId = part->instrumentId();
+            key.partId = part->id();
+            key.tick = engraving::Part::MAIN_INSTRUMENT_TICK;
+            parts->replaceInstrument(key, convertedInstrument, targetStaffType);
+        }
     }
 
     if (!copyright.text.isEmpty()) {

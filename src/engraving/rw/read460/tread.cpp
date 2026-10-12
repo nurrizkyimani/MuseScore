@@ -978,6 +978,8 @@ bool TRead::readProperties(Instrument* item, XmlReader& e, ReadContext& ctx, Par
     const AsciiStringView tag(e.name());
     if (tag == "soundId") {
         item->setSoundId(e.readText());
+    } else if (tag == "numericPulseProfileId") {
+        item->setNumericPulseProfileId(e.readText());
     } else if (tag == "longName") {
         item->setLongName(read500::TRead::readLegacyStaffName(e)); // Old implementation
     } else if (tag == "shortName") {

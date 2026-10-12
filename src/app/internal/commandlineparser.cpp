@@ -127,6 +127,10 @@ void CommandLineParser::init()
                                           "Transpose the given score before executing the '-o' options",
                                           "options"));
 
+    m_parser.addOption(QCommandLineOption("gamelan-instrument",
+                                          "Convert the score to a numeric gamelan instrument before saving",
+                                          "instrument-id"));
+
     m_parser.addOption(QCommandLineOption("page",
                                           "Use with '-o <file>', export only the specified page. "
                                           "Supported output formats: SVG, PNG, PDF, MSCZ",
@@ -319,6 +323,11 @@ void CommandLineParser::parse(int argc, char** argv)
         // Only if "-o" is set "transpose" has some meaning
         if (m_parser.isSet("transpose")) {
             m_options->converterTask.params[MuseScoreCmdOptions::ParamKey::ScoreTransposeOptions] = m_parser.value("transpose");
+        }
+
+        if (m_parser.isSet("gamelan-instrument")) {
+            m_options->converterTask.params[MuseScoreCmdOptions::ParamKey::GamelanInstrumentId]
+                = m_parser.value("gamelan-instrument");
         }
 
         if (m_parser.isSet("page")) {

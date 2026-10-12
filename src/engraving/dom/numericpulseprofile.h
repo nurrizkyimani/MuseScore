@@ -46,6 +46,9 @@ struct NumericPulseProfile {
 };
 
 const NumericPulseProfile* numericPulseProfile(const Instrument* instrument);
+// Built-in Kepatihan tuning profiles used by the notation converter. These
+// profiles are independent of the playback instrument/template.
+const NumericPulseProfile* numericPulseProfileById(const muse::String& id);
 const NumericPulseProfile* numericPulseProfile(const Staff* staff, const Fraction& tick);
 muse::String numericPulseDegreeText(const NumericPulseProfile* profile, int pitch);
 int numericPulseRegister(const NumericPulseProfile* profile, int pitch);

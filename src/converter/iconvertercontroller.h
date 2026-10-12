@@ -40,6 +40,7 @@ public:
     virtual muse::Ret fileConvert(const muse::io::path_t& in, const muse::io::path_t& out, const OpenParams& openParams = {},
                                   const muse::String& soundProfile = {}, const muse::io::path_t& tracksDiffPath = {},
                                   const muse::UriQuery& extensionUri = {}, const std::string& transposeOptionsJson = {},
+                                  const muse::String& gamelanInstrumentId = {},
                                   const std::optional<ConvertTarget>& target = std::nullopt) = 0;
 
     virtual muse::Ret batchConvert(const muse::io::path_t& batchJobFile, const OpenParams& openParams = {},

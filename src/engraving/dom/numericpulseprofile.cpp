@@ -4,8 +4,10 @@
  */
 #include "numericpulseprofile.h"
 
+#include <array>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "instrument.h"
 #include "instrtemplate.h"
@@ -15,6 +17,55 @@
 #include "rw/xmlwriter.h"
 
 namespace mu::engraving {
+
+namespace {
+
+NumericPulseProfile makeKepatihanProfile(const String& id, const std::array<int, 6>& pitches)
+{
+    NumericPulseProfile profile;
+    profile.id = id;
+
+    static const std::array<String, 6> actions {
+        u"note-c", u"note-d", u"note-e", u"note-f", u"note-g", u"note-a"
+    };
+
+    for (int i = 0; i < 6; ++i) {
+        NumericPulseDegree degree;
+        degree.number = i + 1;
+        degree.scorePitch = pitches[i];
+        degree.inputStep = 28 + i;
+        degree.inputIndex = i;
+        degree.action = actions[i];
+        degree.label = String::number(i + 1);
+        profile.degrees.push_back(degree);
+    }
+
+    return profile;
+}
+
+const std::vector<NumericPulseProfile>& kepatihanProfiles()
+{
+    // Pitches are MIDI note numbers. Each profile uses the ascending register
+    // of the supplied tuning; the renderer derives Kepatihan octave dots from
+    // the actual note's register relative to these pitches.
+    static const std::vector<NumericPulseProfile> profiles {
+        makeKepatihanProfile(u"kepatihan-tuning-8-1-med-diversity", { 62, 63, 66, 69, 70, 73 }), // D Eb F# A Bb C#
+        makeKepatihanProfile(u"kepatihan-tuning-8-2-med-diversity", { 64, 65, 66, 69, 72, 73 }), // E F F# A C C#
+        makeKepatihanProfile(u"kepatihan-tuning-8-3-med-diversity", { 62, 65, 66, 67, 70, 73 }), // D F F# G Bb C#
+        makeKepatihanProfile(u"kepatihan-tuning-8-4-med-diversity", { 64, 65, 68, 69, 70, 73 }), // E F G# A Bb C#
+        makeKepatihanProfile(u"kepatihan-tuning-8-1-max-uniformity", { 62, 63, 65, 66, 68, 70 }), // D Eb F F# G# Bb
+        makeKepatihanProfile(u"kepatihan-tuning-8-2-max-uniformity", { 65, 66, 68, 69, 71, 73 }), // F F# G# A B Db
+        makeKepatihanProfile(u"kepatihan-tuning-8-3-max-uniformity", { 62, 66, 67, 69, 70, 72 }), // D F# G A Bb C
+        makeKepatihanProfile(u"kepatihan-tuning-8-4-max-uniformity", { 63, 65, 69, 70, 72, 73 }), // Eb F A Bb C Db
+        makeKepatihanProfile(u"kepatihan-tuning-7-1-max-diversity", { 62, 65, 66, 68, 69, 72 }), // D F F# G# A C
+        makeKepatihanProfile(u"kepatihan-tuning-7-2-max-diversity", { 63, 65, 68, 69, 71, 73 }), // Eb F G# A B C#
+        makeKepatihanProfile(u"kepatihan-tuning-7-3-max-diversity", { 64, 66, 69, 70, 72, 73 }), // E F# A A# C C#
+        makeKepatihanProfile(u"kepatihan-tuning-7-4-max-diversity", { 62, 65, 66, 68, 69, 73 }), // D F F# G# A C#
+    };
+    return profiles;
+}
+
+} // namespace
 
 bool NumericPulseProfile::isValid() const
 {
@@ -141,11 +192,37 @@ const NumericPulseProfile* numericPulseProfile(const Instrument* instrument)
     if (!instrument) {
         return nullptr;
     }
-    const InstrumentTemplate* instrumentTemplate = searchTemplate(instrument->id());
+    // A numeric profile can be assigned independently of playback. This is
+    // important for scores whose original instrument id is tied to a custom
+    // SoundFont or VST track.
+    const String& profileId = instrument->numericPulseProfileId().empty()
+        ? instrument->id() : instrument->numericPulseProfileId();
+    if (!instrument->numericPulseProfileId().empty()) {
+        if (const NumericPulseProfile* profile = numericPulseProfileById(profileId)) {
+            return profile;
+        }
+    }
+    const InstrumentTemplate* instrumentTemplate = searchTemplate(profileId);
     if (!instrumentTemplate || instrumentTemplate->numericPulseProfile.id.empty()) {
         return nullptr;
     }
     return &instrumentTemplate->numericPulseProfile;
+}
+
+const NumericPulseProfile* numericPulseProfileById(const String& id)
+{
+    for (const NumericPulseProfile& profile : kepatihanProfiles()) {
+        if (profile.id == id) {
+            return &profile;
+        }
+    }
+
+    // Backward-compatible id used by the first Gendèr converter prototype.
+    if (id == u"gender-barung-tuning-8-1-med-diversity") {
+        return &kepatihanProfiles().front();
+    }
+
+    return nullptr;
 }
 
 const NumericPulseProfile* numericPulseProfile(const Staff* staff, const Fraction& tick)

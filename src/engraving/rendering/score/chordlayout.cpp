@@ -115,6 +115,7 @@ void ChordLayout::layoutPitched(Chord* item, LayoutContext& ctx)
     Note* upnote = item->upNote();
     Note* downnote = item->downNote();
     Note* leftNote = nullptr;
+    const bool isNumericPulse = numericPulseProfile(item->staff(), item->tick()) != nullptr;
 
     delete item->tabDur();     // no TAB? no duration symbol! (may happen when converting a TAB into PITCHED)
     item->setTabDur(nullptr);
@@ -142,10 +143,17 @@ void ChordLayout::layoutPitched(Chord* item, LayoutContext& ctx)
         }
 
         Accidental* accidental = note->accidental();
-        if (accidental && accidental->visible()) {
+        if (isNumericPulse && accidental) {
+            // Numeric-pulse notation has no separate Western accidental. Clear
+            // the accidental's layout shape as well as its drawing flag so it
+            // cannot remain selectable after conversion.
+            accidental->mutldata()->reset();
+            accidental->mutldata()->setIsSkipDraw(true);
+        }
+        if (!isNumericPulse && accidental && accidental->visible()) {
             chordAccidentals.push_back(accidental);
         }
-        if (accidental && accidental->addToSkyline() && !note->fixed()) {
+        if (!isNumericPulse && accidental && accidental->addToSkyline() && !note->fixed()) {
             // convert x position of accidental to segment coordinate system
             double x = accidental->pos().x() + note->pos().x() + chordX;
             // distance from accidental to note already taken into account
@@ -2278,6 +2286,7 @@ void ChordLayout::layoutChords1(LayoutContext& ctx, Segment* segment, staff_idx_
     const TrackRange partTrackRangeOrDefault = part ? part->trackRange() : TrackRange { startTrack, endTrack };
     const track_idx_t partStartTrack = partTrackRangeOrDefault.startTrack;
     const track_idx_t partEndTrack = partTrackRangeOrDefault.endTrack;
+    const bool isNumericPulse = numericPulseProfile(staff, tick) != nullptr;
 
     if (isTab) {
         skipAccidentals(segment, startTrack, endTrack);
@@ -2315,7 +2324,7 @@ void ChordLayout::layoutChords1(LayoutContext& ctx, Segment* segment, staff_idx_
         applyChordOffsets(segment, staffIdx, partStartTrack, partEndTrack, offsetInfo, posInfo, ctx);
     }
 
-    if (!isTab) {
+    if (!isTab && !isNumericPulse) {
         layoutLedgerLines(posInfo.chords, ctx);
         AccidentalsLayout::layoutAccidentals(posInfo.chords, ctx);
         for (Chord* chord : posInfo.chords) {

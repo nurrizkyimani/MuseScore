@@ -134,7 +134,7 @@ NotationAutomationController::SysStaffToPolylinesMap NotationAutomationControlle
     while (staffIdx != muse::nidx) {
         PolylinePlot* polyline = createPolylineForStaff(system, staffIdx);
         if (polyline) {
-            map.emplace(SysStaffKey(system, staffIdx), PolylinesSet({ polyline }));
+            map.emplace(SysStaffKey{ system, staffIdx }, PolylinesSet({ polyline }));
         }
         staffIdx = system->nextVisibleStaff(staffIdx);
     }
@@ -168,7 +168,7 @@ muse::uicomponents::PolylinePlot* NotationAutomationController::createPolylineFo
     const muse::RectF staffCanvasRect = sysStaff->bbox().translated(system->canvasPos());
     const QVector<PointData> pointsData = pointsDataInStaff(staff->id(), staffCanvasRect, systemStartTick, systemEndTick);
 
-    const SysStaffKey key(system, staffIdx);
+    const SysStaffKey key{ system, staffIdx };
     m_pointsDataByStaff[key] = pointsData;
 
     //! NOTE: There can't be a 1-to-1 match between the number of points in the automation model and
@@ -258,13 +258,13 @@ QVector<NotationAutomationController::PointData> NotationAutomationController::p
         const mu::engraving::real_t resolvedIn = mu::engraving::resolvedInValue(curve, it);
         if (resolvedIn == autoPoint.outValue) {
             const QPointF qpf(pointXInStaff, 1.0 - automationValueToDisplay(resolvedIn));
-            points.emplace_back(PointData(currentPointIndex++, tick, qpf, PointData::PointType::BOTH));
+            points.emplace_back(PointData{ currentPointIndex++, tick, qpf, PointData::PointType::BOTH });
         } else {
             const QPointF qpfIn(pointXInStaff, 1.0 - automationValueToDisplay(resolvedIn));
-            points.emplace_back(PointData(currentPointIndex++, tick, qpfIn, PointData::PointType::IN));
+            points.emplace_back(PointData{ currentPointIndex++, tick, qpfIn, PointData::PointType::IN });
 
             const QPointF qpfOut(pointXInStaff, 1.0 - automationValueToDisplay(autoPoint.outValue));
-            points.emplace_back(PointData(currentPointIndex++, tick, qpfOut, PointData::PointType::OUT));
+            points.emplace_back(PointData{ currentPointIndex++, tick, qpfOut, PointData::PointType::OUT });
         }
 
         if (isPastEnd) {

@@ -154,7 +154,7 @@ void PlaybackController::init()
 
         auto ad = dispatcher();
         for (const auto& [actionCode, command] : actionToCommand) {
-            ad->reg(this, actionCode, [d, command]() { return d->dispatch(command); });
+            ad->reg(this, actionCode, [d, command = command]() { return d->dispatch(command); });
         }
     }
 
@@ -1238,15 +1238,59 @@ void PlaybackController::doAddTrack(const InstrumentTrackId& instrumentTrackId, 
         const std::string instrumentId = instrumentTrackId.instrumentId.toStdString();
         const bool isGamelanTrack = instrumentId.find("-pelog") != std::string::npos
                                     || instrumentId.find("-slendro") != std::string::npos
-                                    || instrumentId.find("kendhang-") != std::string::npos;
+                                    || instrumentId.find("kendhang-") != std::string::npos
+                                    || instrumentId.find("-tuning-") != std::string::npos;
         if (isGamelanTrack && !inParams.isValid() && resourceRetryCount < 3) {
             const uint64_t retryPlaybackKey = notationPlaybackKey();
             playback()->availableInputResources().onResolve(this,
-                [this, instrumentTrackId, title, onFinished, retryPlaybackKey, resourceRetryCount](
-                    const AudioResourceMetaList&) {
+                [this, instrumentTrackId, title, onFinished, retryPlaybackKey, resourceRetryCount,
+                 setupData = playbackData.setupData](const AudioResourceMetaList& resources) {
                 if (notationPlaybackKey() != retryPlaybackKey) {
                     onFinished();
                     return;
+                }
+
+                // SoundFonts may finish loading after the sound-profile
+                // repository has taken its initial snapshot. Pick the
+                // resource directly from the engine's current list before
+                // retrying, so a bundled Gamelan instrument cannot fall back
+                // to the piano merely because of startup timing.
+                for (const AudioResourceMeta& resource : resources) {
+                    const bool matchesSetup = resourceMatchesSetup(resource, setupData);
+                    const muse::String soundFontName = resource.attributeVal(muse::audio::synth::SOUNDFONT_NAME_ATTRIBUTE);
+                    const bool isBundledGamelan =
+                        (setupData.id == u"gender-barung-tuning-8-1-med-diversity"
+                         && soundFontName == u"Gamelan_Gender_Barung_8_1_Med_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-8-2-med-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_2_Med_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-8-3-med-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_3_Med_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-8-4-med-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_4_Med_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-7-1-max-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_7_1_Max_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-7-2-max-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_7_2_Max_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-7-3-max-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_7_3_Max_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-7-4-max-diversity"
+                            && soundFontName == u"Gamelan_Gender_Barung_7_4_Max_Diversity")
+                        || (setupData.id == u"gender-barung-tuning-8-1-max-uniformity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_1_Max_Uniformity")
+                        || (setupData.id == u"gender-barung-tuning-8-2-max-uniformity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_2_Max_Uniformity")
+                        || (setupData.id == u"gender-barung-tuning-8-3-max-uniformity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_3_Max_Uniformity")
+                        || (setupData.id == u"gender-barung-tuning-8-4-max-uniformity"
+                            && soundFontName == u"Gamelan_Gender_Barung_8_4_Max_Uniformity")
+                        || (setupData.id == u"rebab-tuning-8-1-med-diversity"
+                            && soundFontName == u"Gamelan_Rebab_8_1_Med_Diversity")
+                        || (setupData.id == u"rebab-tuning-7-1-max-diversity"
+                            && soundFontName == u"Gamelan_Rebab_7_1_Max_Diversity");
+                    if (matchesSetup || isBundledGamelan) {
+                        audioSettings()->setTrackInputParams(instrumentTrackId, { resource, {} });
+                        break;
+                    }
                 }
 
                 doAddTrack(instrumentTrackId, title, onFinished, resourceRetryCount + 1);
